@@ -1,0 +1,1 @@
+c:\xampp\php\phpunit.bat C:\xampp\htdocs\crm2\application\tests\card\TestCardKeykConvert.php

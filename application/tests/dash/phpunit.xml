@@ -1,0 +1,10 @@
+<phpunit colors="false" 
+	bootstrap="C:\xampp\htdocs\crm2\modules\unittest\bootstrap.php">
+    <testsuites>
+        <testsuite name="CRM Tests">
+             <file>C:\xampp\htdocs\crm2\application\tests\dash\testDash.php</file>
+            
+             
+        </testsuite>
+    </testsuites>
+</phpunit>

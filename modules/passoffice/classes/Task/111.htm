@@ -1,0 +1,593 @@
+<style type="text/css">
+#kohana_error { background: #ddd; font-size: 1em; font-family:sans-serif; text-align: left; color: #111; }
+#kohana_error h1,
+#kohana_error h2 { margin: 0; padding: 1em; font-size: 1em; font-weight: normal; background: #911; color: #fff; }
+	#kohana_error h1 a,
+	#kohana_error h2 a { color: #fff; }
+#kohana_error h2 { background: #222; }
+#kohana_error h3 { margin: 0; padding: 0.4em 0 0; font-size: 1em; font-weight: normal; }
+#kohana_error p { margin: 0; padding: 0.2em 0; }
+#kohana_error a { color: #1b323b; }
+#kohana_error pre { overflow: auto; white-space: pre-wrap; }
+#kohana_error table { width: 100%; display: block; margin: 0 0 0.4em; padding: 0; border-collapse: collapse; background: #fff; }
+	#kohana_error table td { border: solid 1px #ddd; text-align: left; vertical-align: top; padding: 0.4em; }
+#kohana_error div.content { padding: 0.4em 1em 1em; overflow: hidden; }
+#kohana_error pre.source { margin: 0 0 1em; padding: 0.4em; background: #fff; border: dotted 1px #b7c680; line-height: 1.2em; }
+	#kohana_error pre.source span.line { display: block; }
+	#kohana_error pre.source span.highlight { background: #f0eb96; }
+		#kohana_error pre.source span.line span.number { color: #666; }
+#kohana_error ol.trace { display: block; margin: 0 0 0 2em; padding: 0; list-style: decimal; }
+	#kohana_error ol.trace li { margin: 0; padding: 0; }
+.js .collapsed { display: none; }
+</style>
+<script type="text/javascript">
+document.documentElement.className = document.documentElement.className + ' js';
+function koggle(elem)
+{
+	elem = document.getElementById(elem);
+
+	if (elem.style && elem.style['display'])
+		// Only works with the "style" attr
+		var disp = elem.style['display'];
+	else if (elem.currentStyle)
+		// For MSIE, naturally
+		var disp = elem.currentStyle['display'];
+	else if (window.getComputedStyle)
+		// For most other browsers
+		var disp = document.defaultView.getComputedStyle(elem, null).getPropertyValue('display');
+
+	// Toggle the state of the "display" style
+	elem.style.display = disp == 'block' ? 'none' : 'block';
+	return false;
+}
+</script>
+<div id="kohana_error">
+	<h1><span class="type">Kohana_Exception [ 0 ]:</span> <span class="message">Directory APPPATH\cache must be writable</span></h1>
+	<div id="error6687990accb7c" class="content">
+		<p><span class="file">SYSPATH\classes\Kohana\Core.php [ 278 ]</span></p>
+		<pre class="source"><code><span class="line"><span class="number">273</span> 			Kohana::$cache_dir = APPPATH.'cache';
+</span><span class="line"><span class="number">274</span> 		}
+</span><span class="line"><span class="number">275</span> 
+</span><span class="line"><span class="number">276</span> 		if ( ! is_writable(Kohana::$cache_dir))
+</span><span class="line"><span class="number">277</span> 		{
+</span><span class="line highlight"><span class="number">278</span> 			throw new Kohana_Exception('Directory :dir must be writable',
+</span><span class="line"><span class="number">279</span> 				array(':dir' =&gt; Debug::path(Kohana::$cache_dir)));
+</span><span class="line"><span class="number">280</span> 		}
+</span><span class="line"><span class="number">281</span> 
+</span><span class="line"><span class="number">282</span> 		if (isset($settings['cache_life']))
+</span><span class="line"><span class="number">283</span> 		{
+</span></code></pre>		<ol class="trace">
+					<li>
+				<p>
+					<span class="file">
+													<a href="#error6687990accb7csource0" onclick="return koggle('error6687990accb7csource0')">APPPATH\bootstrap.php [ 112 ]</a>
+											</span>
+					&raquo;
+					Kohana_Core::init(<a href="#error6687990accb7cargs0" onclick="return koggle('error6687990accb7cargs0')">arguments</a>)
+				</p>
+								<div id="error6687990accb7cargs0" class="collapsed">
+					<table cellspacing="0">
+											<tr>
+							<td><code>0</code></td>
+							<td><pre><small>array</small><span>(3)</span> <span>(
+    "base_url" => <small>string</small><span>(6)</span> "/crm2/"
+    "index_file" => <small>bool</small> FALSE
+    "errors" => <small>bool</small> TRUE
+)</span></pre></td>
+						</tr>
+										</table>
+				</div>
+													<pre id="error6687990accb7csource0" class="source collapsed"><code><pre class="source"><code><span class="line"><span class="number">107</span>  */
+</span><span class="line"><span class="number">108</span> Kohana::init(array(
+</span><span class="line"><span class="number">109</span> 	'base_url'   =&gt; '/crm2/',
+</span><span class="line"><span class="number">110</span> 	'index_file'    =&gt; FALSE,
+</span><span class="line"><span class="number">111</span> 	'errors' =&gt; TRUE
+</span><span class="line highlight"><span class="number">112</span> ));
+</span><span class="line"><span class="number">113</span> 
+</span><span class="line"><span class="number">114</span> /**
+</span><span class="line"><span class="number">115</span>  * Attach the file write to logging. Multiple writers are supported.
+</span><span class="line"><span class="number">116</span>  */
+</span><span class="line"><span class="number">117</span> Kohana::$log-&gt;attach(new Log_File(APPPATH.'logs'));
+</span></code></pre></code></pre>
+							</li>
+								<li>
+				<p>
+					<span class="file">
+													<a href="#error6687990accb7csource1" onclick="return koggle('error6687990accb7csource1')">DOCROOT\index.php [ 102 ]</a>
+											</span>
+					&raquo;
+					require(<a href="#error6687990accb7cargs1" onclick="return koggle('error6687990accb7cargs1')">arguments</a>)
+				</p>
+								<div id="error6687990accb7cargs1" class="collapsed">
+					<table cellspacing="0">
+											<tr>
+							<td><code>0</code></td>
+							<td><pre><small>string</small><span>(46)</span> "C:\xampp\htdocs\crm2\application\bootstrap.php"</pre></td>
+						</tr>
+										</table>
+				</div>
+													<pre id="error6687990accb7csource1" class="source collapsed"><code><pre class="source"><code><span class="line"><span class="number"> 97</span> {
+</span><span class="line"><span class="number"> 98</span> 	define('KOHANA_START_MEMORY', memory_get_usage());
+</span><span class="line"><span class="number"> 99</span> }
+</span><span class="line"><span class="number">100</span> 
+</span><span class="line"><span class="number">101</span> // Bootstrap the application
+</span><span class="line highlight"><span class="number">102</span> require APPPATH.'bootstrap'.EXT;
+</span><span class="line"><span class="number">103</span> 
+</span><span class="line"><span class="number">104</span> if (PHP_SAPI == 'cli') // Try and load minion
+</span><span class="line"><span class="number">105</span> {
+</span><span class="line"><span class="number">106</span> 	class_exists('Minion_Task') OR die('Please enable the Minion module for CLI support.');
+</span><span class="line"><span class="number">107</span> 	set_exception_handler(array('Minion_Exception', 'handler'));
+</span></code></pre></code></pre>
+							</li>
+								<li>
+				<p>
+					<span class="file">
+													<a href="#error6687990accb7csource2" onclick="return koggle('error6687990accb7csource2')">MODPATH\minion\minion [ 4 ]</a>
+											</span>
+					&raquo;
+					include(<a href="#error6687990accb7cargs2" onclick="return koggle('error6687990accb7cargs2')">arguments</a>)
+				</p>
+								<div id="error6687990accb7cargs2" class="collapsed">
+					<table cellspacing="0">
+											<tr>
+							<td><code>0</code></td>
+							<td><pre><small>string</small><span>(30)</span> "C:\xampp\htdocs\crm2\index.php"</pre></td>
+						</tr>
+										</table>
+				</div>
+													<pre id="error6687990accb7csource2" class="source collapsed"><code><pre class="source"><code><span class="line"><span class="number">1</span> #!/usr/bin/env php
+</span><span class="line"><span class="number">2</span> &lt;?php
+</span><span class="line"><span class="number">3</span> 
+</span><span class="line highlight"><span class="number">4</span> include __DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'index.php';</span></code></pre></code></pre>
+							</li>
+							</ol>
+	</div>
+	<h2><a href="#error6687990accb7cenvironment" onclick="return koggle('error6687990accb7cenvironment')">Environment</a></h2>
+	<div id="error6687990accb7cenvironment" class="content collapsed">
+				<h3><a href="#error6687990accb7cenvironment_included" onclick="return koggle('error6687990accb7cenvironment_included')">Included files</a> (31)</h3>
+		<div id="error6687990accb7cenvironment_included" class="collapsed">
+			<table cellspacing="0">
+								<tr>
+					<td><code>MODPATH\minion\minion</code></td>
+				</tr>
+								<tr>
+					<td><code>DOCROOT\index.php</code></td>
+				</tr>
+								<tr>
+					<td><code>APPPATH\bootstrap.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\Core.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\I18n.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\I18n.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\Exception.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\Kohana\Exception.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Debug.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\Debug.php</code></td>
+				</tr>
+								<tr>
+					<td><code>APPPATH\i18n\ru\ru.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\HTML.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\HTML.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\URL.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\URL.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\UTF8.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\UTF8.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Log.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\Log.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\View.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\View.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Response.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\Response.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\HTTP\Response.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\HTTP\Response.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\HTTP\Message.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\HTTP\Message.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\HTTP\Header.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\classes\Kohana\HTTP\Header.php</code></td>
+				</tr>
+								<tr>
+					<td><code>SYSPATH\views\kohana\error.php</code></td>
+				</tr>
+							</table>
+		</div>
+				<h3><a href="#error6687990accb7cenvironment_loaded" onclick="return koggle('error6687990accb7cenvironment_loaded')">Loaded extensions</a> (46)</h3>
+		<div id="error6687990accb7cenvironment_loaded" class="collapsed">
+			<table cellspacing="0">
+								<tr>
+					<td><code>Core</code></td>
+				</tr>
+								<tr>
+					<td><code>bcmath</code></td>
+				</tr>
+								<tr>
+					<td><code>calendar</code></td>
+				</tr>
+								<tr>
+					<td><code>ctype</code></td>
+				</tr>
+								<tr>
+					<td><code>date</code></td>
+				</tr>
+								<tr>
+					<td><code>ereg</code></td>
+				</tr>
+								<tr>
+					<td><code>filter</code></td>
+				</tr>
+								<tr>
+					<td><code>ftp</code></td>
+				</tr>
+								<tr>
+					<td><code>hash</code></td>
+				</tr>
+								<tr>
+					<td><code>iconv</code></td>
+				</tr>
+								<tr>
+					<td><code>json</code></td>
+				</tr>
+								<tr>
+					<td><code>mcrypt</code></td>
+				</tr>
+								<tr>
+					<td><code>SPL</code></td>
+				</tr>
+								<tr>
+					<td><code>odbc</code></td>
+				</tr>
+								<tr>
+					<td><code>pcre</code></td>
+				</tr>
+								<tr>
+					<td><code>Reflection</code></td>
+				</tr>
+								<tr>
+					<td><code>session</code></td>
+				</tr>
+								<tr>
+					<td><code>standard</code></td>
+				</tr>
+								<tr>
+					<td><code>mysqlnd</code></td>
+				</tr>
+								<tr>
+					<td><code>tokenizer</code></td>
+				</tr>
+								<tr>
+					<td><code>zip</code></td>
+				</tr>
+								<tr>
+					<td><code>zlib</code></td>
+				</tr>
+								<tr>
+					<td><code>libxml</code></td>
+				</tr>
+								<tr>
+					<td><code>dom</code></td>
+				</tr>
+								<tr>
+					<td><code>PDO</code></td>
+				</tr>
+								<tr>
+					<td><code>bz2</code></td>
+				</tr>
+								<tr>
+					<td><code>SimpleXML</code></td>
+				</tr>
+								<tr>
+					<td><code>wddx</code></td>
+				</tr>
+								<tr>
+					<td><code>xml</code></td>
+				</tr>
+								<tr>
+					<td><code>xmlreader</code></td>
+				</tr>
+								<tr>
+					<td><code>xmlwriter</code></td>
+				</tr>
+								<tr>
+					<td><code>openssl</code></td>
+				</tr>
+								<tr>
+					<td><code>curl</code></td>
+				</tr>
+								<tr>
+					<td><code>fileinfo</code></td>
+				</tr>
+								<tr>
+					<td><code>gd</code></td>
+				</tr>
+								<tr>
+					<td><code>gettext</code></td>
+				</tr>
+								<tr>
+					<td><code>mbstring</code></td>
+				</tr>
+								<tr>
+					<td><code>exif</code></td>
+				</tr>
+								<tr>
+					<td><code>mysql</code></td>
+				</tr>
+								<tr>
+					<td><code>mysqli</code></td>
+				</tr>
+								<tr>
+					<td><code>pdo_mysql</code></td>
+				</tr>
+								<tr>
+					<td><code>PDO_ODBC</code></td>
+				</tr>
+								<tr>
+					<td><code>pdo_sqlite</code></td>
+				</tr>
+								<tr>
+					<td><code>sockets</code></td>
+				</tr>
+								<tr>
+					<td><code>Phar</code></td>
+				</tr>
+								<tr>
+					<td><code>mhash</code></td>
+				</tr>
+							</table>
+		</div>
+																<h3><a href="#error6687990accb7cenvironment_server" onclick="return koggle('error6687990accb7cenvironment_server')">$_SERVER</a></h3>
+		<div id="error6687990accb7cenvironment_server" class="collapsed">
+			<table cellspacing="0">
+								<tr>
+					<td><code>ALLUSERSPROFILE</code></td>
+					<td><pre><small>string</small><span>(14)</span> "C:\ProgramData"</pre></td>
+				</tr>
+								<tr>
+					<td><code>APPDATA</code></td>
+					<td><pre><small>string</small><span>(32)</span> "C:\Users\support\AppData\Roaming"</pre></td>
+				</tr>
+								<tr>
+					<td><code>CLIENTNAME</code></td>
+					<td><pre><small>string</small><span>(7)</span> "SB-EK01"</pre></td>
+				</tr>
+								<tr>
+					<td><code>CommonProgramFiles</code></td>
+					<td><pre><small>string</small><span>(35)</span> "C:\Program Files (x86)\Common Files"</pre></td>
+				</tr>
+								<tr>
+					<td><code>CommonProgramFiles(x86)</code></td>
+					<td><pre><small>string</small><span>(35)</span> "C:\Program Files (x86)\Common Files"</pre></td>
+				</tr>
+								<tr>
+					<td><code>CommonProgramW6432</code></td>
+					<td><pre><small>string</small><span>(29)</span> "C:\Program Files\Common Files"</pre></td>
+				</tr>
+								<tr>
+					<td><code>COMPUTERNAME</code></td>
+					<td><pre><small>string</small><span>(7)</span> "ARTONIT"</pre></td>
+				</tr>
+								<tr>
+					<td><code>ComSpec</code></td>
+					<td><pre><small>string</small><span>(27)</span> "C:\Windows\system32\cmd.exe"</pre></td>
+				</tr>
+								<tr>
+					<td><code>FPS_BROWSER_APP_PROFILE_STRING</code></td>
+					<td><pre><small>string</small><span>(17)</span> "Internet Explorer"</pre></td>
+				</tr>
+								<tr>
+					<td><code>FPS_BROWSER_USER_PROFILE_STRING</code></td>
+					<td><pre><small>string</small><span>(7)</span> "Default"</pre></td>
+				</tr>
+								<tr>
+					<td><code>HOMEDRIVE</code></td>
+					<td><pre><small>string</small><span>(2)</span> "C:"</pre></td>
+				</tr>
+								<tr>
+					<td><code>HOMEPATH</code></td>
+					<td><pre><small>string</small><span>(14)</span> "\Users\support"</pre></td>
+				</tr>
+								<tr>
+					<td><code>LOCALAPPDATA</code></td>
+					<td><pre><small>string</small><span>(30)</span> "C:\Users\support\AppData\Local"</pre></td>
+				</tr>
+								<tr>
+					<td><code>LOGONSERVER</code></td>
+					<td><pre><small>string</small><span>(9)</span> "\\ARTONIT"</pre></td>
+				</tr>
+								<tr>
+					<td><code>NUMBER_OF_PROCESSORS</code></td>
+					<td><pre><small>string</small><span>(1)</span> "4"</pre></td>
+				</tr>
+								<tr>
+					<td><code>OS</code></td>
+					<td><pre><small>string</small><span>(10)</span> "Windows_NT"</pre></td>
+				</tr>
+								<tr>
+					<td><code>Path</code></td>
+					<td><pre><small>string</small><span>(178)</span> "C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files\dotnet\;C:\&nbsp;&hellip;"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PATHEXT</code></td>
+					<td><pre><small>string</small><span>(53)</span> ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PROCESSOR_ARCHITECTURE</code></td>
+					<td><pre><small>string</small><span>(3)</span> "x86"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PROCESSOR_ARCHITEW6432</code></td>
+					<td><pre><small>string</small><span>(5)</span> "AMD64"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PROCESSOR_IDENTIFIER</code></td>
+					<td><pre><small>string</small><span>(52)</span> "Intel64 Family 15 Model 107 Stepping 1, GenuineIntel"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PROCESSOR_LEVEL</code></td>
+					<td><pre><small>string</small><span>(2)</span> "15"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PROCESSOR_REVISION</code></td>
+					<td><pre><small>string</small><span>(4)</span> "6b01"</pre></td>
+				</tr>
+								<tr>
+					<td><code>ProgramData</code></td>
+					<td><pre><small>string</small><span>(14)</span> "C:\ProgramData"</pre></td>
+				</tr>
+								<tr>
+					<td><code>ProgramFiles</code></td>
+					<td><pre><small>string</small><span>(22)</span> "C:\Program Files (x86)"</pre></td>
+				</tr>
+								<tr>
+					<td><code>ProgramFiles(x86)</code></td>
+					<td><pre><small>string</small><span>(22)</span> "C:\Program Files (x86)"</pre></td>
+				</tr>
+								<tr>
+					<td><code>ProgramW6432</code></td>
+					<td><pre><small>string</small><span>(16)</span> "C:\Program Files"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PROMPT</code></td>
+					<td><pre><small>string</small><span>(4)</span> "$P$G"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PSModulePath</code></td>
+					<td><pre><small>string</small><span>(93)</span> "C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PUBLIC</code></td>
+					<td><pre><small>string</small><span>(15)</span> "C:\Users\Public"</pre></td>
+				</tr>
+								<tr>
+					<td><code>SESSIONNAME</code></td>
+					<td><pre><small>string</small><span>(10)</span> "RDP-Tcp#24"</pre></td>
+				</tr>
+								<tr>
+					<td><code>SystemDrive</code></td>
+					<td><pre><small>string</small><span>(2)</span> "C:"</pre></td>
+				</tr>
+								<tr>
+					<td><code>SystemRoot</code></td>
+					<td><pre><small>string</small><span>(10)</span> "C:\Windows"</pre></td>
+				</tr>
+								<tr>
+					<td><code>TEMP</code></td>
+					<td><pre><small>string</small><span>(37)</span> "C:\Users\support\AppData\Local\Temp\4"</pre></td>
+				</tr>
+								<tr>
+					<td><code>TMP</code></td>
+					<td><pre><small>string</small><span>(37)</span> "C:\Users\support\AppData\Local\Temp\4"</pre></td>
+				</tr>
+								<tr>
+					<td><code>USERDOMAIN</code></td>
+					<td><pre><small>string</small><span>(7)</span> "ARTONIT"</pre></td>
+				</tr>
+								<tr>
+					<td><code>USERDOMAIN_ROAMINGPROFILE</code></td>
+					<td><pre><small>string</small><span>(7)</span> "ARTONIT"</pre></td>
+				</tr>
+								<tr>
+					<td><code>USERNAME</code></td>
+					<td><pre><small>string</small><span>(7)</span> "support"</pre></td>
+				</tr>
+								<tr>
+					<td><code>USERPROFILE</code></td>
+					<td><pre><small>string</small><span>(16)</span> "C:\Users\support"</pre></td>
+				</tr>
+								<tr>
+					<td><code>windir</code></td>
+					<td><pre><small>string</small><span>(10)</span> "C:\Windows"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PHP_SELF</code></td>
+					<td><pre><small>string</small><span>(42)</span> "c:\xampp\htdocs\crm2\modules\minion\minion"</pre></td>
+				</tr>
+								<tr>
+					<td><code>SCRIPT_NAME</code></td>
+					<td><pre><small>string</small><span>(42)</span> "c:\xampp\htdocs\crm2\modules\minion\minion"</pre></td>
+				</tr>
+								<tr>
+					<td><code>SCRIPT_FILENAME</code></td>
+					<td><pre><small>string</small><span>(42)</span> "c:\xampp\htdocs\crm2\modules\minion\minion"</pre></td>
+				</tr>
+								<tr>
+					<td><code>PATH_TRANSLATED</code></td>
+					<td><pre><small>string</small><span>(42)</span> "c:\xampp\htdocs\crm2\modules\minion\minion"</pre></td>
+				</tr>
+								<tr>
+					<td><code>DOCUMENT_ROOT</code></td>
+					<td><pre><small>string</small><span>(0)</span> ""</pre></td>
+				</tr>
+								<tr>
+					<td><code>REQUEST_TIME_FLOAT</code></td>
+					<td><pre><small>float</small> 1720162570.7778</pre></td>
+				</tr>
+								<tr>
+					<td><code>REQUEST_TIME</code></td>
+					<td><pre><small>integer</small> 1720162570</pre></td>
+				</tr>
+								<tr>
+					<td><code>argv</code></td>
+					<td><pre><small>array</small><span>(2)</span> <span>(
+    0 => <small>string</small><span>(42)</span> "c:\xampp\htdocs\crm2\modules\minion\minion"
+    1 => <small>string</small><span>(28)</span> "--task=checkGuestCardExpired"
+)</span></pre></td>
+				</tr>
+								<tr>
+					<td><code>argc</code></td>
+					<td><pre><small>integer</small> 2</pre></td>
+				</tr>
+							</table>
+		</div>
+			</div>
+</div>

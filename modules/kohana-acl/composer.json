@@ -1,0 +1,28 @@
+{
+	"name":        "dmitrymomot/kohana-acl",
+	"type":        "kohana-module",
+	"description": "Kohana v3 ACL",
+	"homepage":    "http://dmitrymomot.com/",
+	"license":     "MIT",
+	"keywords":    ["kohana", "framework", "acl", "access control list"],
+	"authors": [
+		{
+			"name":     "Dmitry Momot",
+			"homepage": "http://dimkof.com/",
+			"email":    "dmitry@dimkof.com",
+			"role":     "developer"
+		}
+	],
+
+	"require": {
+		"php": ">=5.3.3",
+        "kohana/core": ">=3.3",
+		"composer/installers": "*"
+	},
+
+    "extra": {
+        "branch-alias": {
+			"dev-3.3/develop": "3.3.x-dev"
+        }
+    }
+}

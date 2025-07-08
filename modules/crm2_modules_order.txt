@@ -1,0 +1,12 @@
+Перечень модулей crm2
+23.11.2024
+cards
+contacts
+kohana-acl
+menu
+passoffice
+report
+sqlite-gui-1.9.0-x64 - тут лежит программа для просмотра sqlite
+stat
+template - заготовки для создания модулей
+tuner

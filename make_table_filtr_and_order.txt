@@ -1,0 +1,23 @@
+вывод управления страницами
+
+<?php
+		include Kohana::find_file('views', 'paginatoion_controller_template'); 
+		$sn=0;
+?>
+
+<th class="filter-false sorter-false"><?php echo __('sn'); ?></th>
+
+<td><?php echo ++$sn; ?></td>
+
+<table class="data tablesorter-blue" width="60%" cellpadding="0" cellspacing="0" id="tablesorter" >
+
+Запрет или разрешение фильтрования и сортировки
+
+<th class="filter-false sorter-false"><?php echo __('contacts.action'); ?></th>
+
+
+<thead>
+</thead>
+<tbody>
+</tbody>				
+
