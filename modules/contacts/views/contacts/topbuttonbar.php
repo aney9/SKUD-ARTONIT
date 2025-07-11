@@ -47,6 +47,14 @@ $battArray=array(
 				'disabled'=>'disabled',	
 				'tittle'=>'Журнал событий',			
 	),
+	'addPeople'=>array(
+		'anchor'=>'contacts/addPeople/' . $id_pep=0,
+		'messOnbatton'=>__('Добавить человека'),
+		'class' => 'middle_switch',
+		'disabled'=> 'disabled',
+		'tittle'=>'Добавить человека',
+
+	),
 	
 	/* 'test'=>array(
 				'anchor'=>'',

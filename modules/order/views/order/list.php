@@ -51,13 +51,16 @@ if ($alert) { ?>
                         <th><?php echo __('Номер карты')?></th>
                         <th><?php echo __('Фамилия заказчика')?></th>
                         <th><?php echo __('contacts.company'); ?></th>
+                        <th><?php echo __('Бюро пропусков');?></th>
                         <th><?php echo __('Время заказа'); ?></th>
                         <th>Время визита</th>
                         <th><?php echo __('contacts.action'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($people as $pep) { ?>
+                    <?php foreach ($people as $pep) { 
+                       // echo Debug::vars('62', $people);exit;
+                        ?>
                     <tr>
                         <td>
                             <?php 
@@ -104,6 +107,25 @@ if ($alert) { ?>
                         </td>
                         <td>
                             <?php 
+                            if ($pep['ID_PEP'] == '7692'){
+                                echo ('10');
+                            }
+                            else if ($pep['ID_PEP'] == '7786'){
+                                echo('4');
+                            }
+                            else if ($pep['ID_PEP'] == '1'){
+                                echo('17');
+                            }
+                            else{
+                                    $user = new User(); 
+                                echo $user->bp; 
+                            }
+                                ?>
+                            
+                                
+                        </td>
+                        <td>
+                            <?php 
                             echo isset($pep['TIMEORDER']) ? date('d.m.Y H:i', strtotime($pep['TIMEORDER'])) : 'Не указано'; ?>
                         </td>
                         <td><?php echo isset($pep['TIMEPLAN']) ? date('d.m.Y', strtotime($pep['TIMEPLAN'])) : 'Не указано'; ?></td>
@@ -129,6 +151,9 @@ if ($alert) { ?>
         <div style="margin: 100px 0; text-align: center;">
             <?php echo __('contacts.empty'); ?><br /><br />
         </div>
-        <?php } ?>
+        <?php } 
+        $user = new User();
+        echo Debug::vars('155', $user);//exit;
+        ?>
     </div>
 </div>

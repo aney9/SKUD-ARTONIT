@@ -1,137 +1,134 @@
-# Markdown Syntax
+# Синтаксис Markdown
 
-The userguide uses [Markdown](http://daringfireball.net/projects/markdown/) and [Markdown Extra](http://michelf.com/projects/php-markdown/extra/) for the userguide pages, and the in-code comments used to generate the API browser.  This is a brief summary of most of Markdown and Markdown extra features.  It does not cover everything, and it does not cover all the caveats.
+В руководстве пользователя используются [Markdown](http://daringfireball.net/projects/markdown/) и [Markdown Extra](http://michelf.com/projects/php-markdown/extra/) для страниц руководства пользователя, а также комментарии в коде, используемые для генерации API браузера. Это краткий обзор большинства функций Markdown и Markdown Extra. Он не охватывает все возможности и не учитывает все возможные нюансы.
 
-[!!] Be sure to check out the **[Userguide Specific Syntax](#userguide-specific-syntax)** for things that Userguide adds to markdown.
+[!!] Обязательно ознакомьтесь с **[Синтаксис, специфичный для Userguide](#userguide-specific-syntax)**, чтобы узнать о том, что Userguide добавляет в Markdown.
 
-## Headers
+		## Заголовки
 
-    # Header 1
-	
-	## Header 2
-	
-	### Header 3
-	
-	#### Header 4
+		# Заголовок 1
 
-## Paragraphs
+		## Заголовок 2
+
+		### Заголовок 3
+
+		#### Заголовок 4
+
+## Абзацы (Параграф)
 ~~~
-Regular text will be transformed into paragraphs.
-Single returns will not make a new paragraph, this
-allows for wrapping (especially for in-code
-comments).
+Обычный текст будет преобразован в абзацы.
+Одиночные символы возврата строки не создают новый абзац, это позволяет
+переносить строки (особенно для комментариев в коде).
 
-A new paragraph will start if there is a blank line between
-blocks of text.  Chars like > and & are escaped for you.
+Новый абзац начнётся, если между
+блоками текста есть пустая строка. Символы вроде > и & экранируются автоматически.
 
-To make a line break,  
-put two spaces at the  
-end of a line.
+Чтобы сделать перенос строки,
+поставьте два пробела в конце строки.
 ~~~
-Regular text will be transformed into paragraphs.
-Single returns will not make a new paragraph, this
-allows for wrapping (especially for in-code
-comments).
+Обычный текст будет преобразован в абзацы.
+Одиночные символы возврата строки не создают новый абзац, это позволяет
+переносить строки (особенно для комментариев в коде).
 
-A new paragraph will start if there is a blank line between
-blocks of text.  Chars like > and & are escaped for you.
+Новый абзац начнётся, если между
+блоками текста есть пустая строка. Символы вроде > и & экранируются автоматически.
 
-To make a line break,  
-put two spaces at the  
-end of a line.
+Чтобы сделать перенос строки,
+поставьте два пробела в конце строки.
 
-## Links
+## Ссылки
 ~~~
-This is a normal link: [Kohana](http://kohanaframework.org).
+Это обычная ссылка: [Kohana](http://kohanaframework.org).
 
-This link has a title: [Kohana](http://kohanaframework.org "The swift PHP framework")
+Заголовок этой ссылки: [Kohana](http://kohanaframework.org "Фреймворк Swift PHP")
 ~~~
-This is a normal link: [Kohana](http://kohanaframework.org)
+Это обычная ссылка: [Kohana](http://kohanaframework.org)
 
-This link has a title: [Kohana](http://kohanaframework.org "The swift PHP framework")
+Заголовок этой ссылки: [Kohana](http://kohanaframework.org "Фреймворк Swift PHP")
 
-## Code blocks
+## Блоки кода
 
-	For inline code simply surround some `text with tick marks.`
+	Для встроенного кода просто заключите текст в галочки.
 	
-For inline code simply surround some `text with tick marks.`
+Для встроенного кода просто заключите текст в галочки.
 
-	// For a block of code,
-	// indent in four spaces,
-	// or with a tab
+	// Для блока кода
+	// сделайте отступ в четыре пробела,
+	// или используйте табуляцию.
 
-You can also do a "fenced" code block:
+Вы также можете создать «ограждённый» блок кода:
 
 	~~~
-	A fenced code block has tildes
-	          above and below it
-	This is sometimes useful when code is near lists
+	Ограждённый блок кода имеет тильды
+	         сверху и снизу
+	Это иногда полезно, когда код находится рядом со списками.
 	~~~
 ~~~
-A fenced code block has tildes
-		  above and below it
-This is sometimes useful when code is near lists
+Ограждённый блок кода имеет тильды
+		сверху и снизу
+Это иногда полезно, когда код находится рядом со списками.
 ~~~
 
-## Unordered Lists
+## Неупорядоченный Списки
 
 ~~~
-*  To make a unordered list, put an asterisk, minus, or + at the beginning
--  of each line, surrounded by spaces.  You can mix * - and +, but it
-+  makes no difference.
+* Чтобы создать неупорядоченный список, поставьте звёздочку, минус или + в начале
+- каждой строки, окружив их пробелами. Вы можете комбинировать * и +, но это
+не имеет значения.
 ~~~
-*  To make a unordered list, put an asterisk, minus, or + at the beginning
--  of each line, surrounded by spaces.  You can mix * - and +, but it
-+  makes no difference.
+* Чтобы создать неупорядоченный список, поставьте звёздочку, минус или + в начале
+- каждой строки, окружив их пробелами. Вы можете комбинировать * и +, но это
++  не имеет значения.
 
-## Ordered Lists
-
-~~~
-1.  For ordered lists, put a number and a period
-2.  On each line that you want numbered.
-9.  It doesn't actually have to be the correct number order
-5.  Just as long as each line has a number
-~~~
-1.  For ordered lists, put a number and a period
-2.  On each line that you want numbered.
-9.  It doesn't actually have to be the correct number order
-5.  Just as long as each line has a number
-
-## Nested Lists
+## Упорядоченные списки
 
 ~~~
-*  To nest lists you just add four spaces before the * or number
-	1. Like this
-		*  It's pretty basic, this line has eight spaces, so its nested twice
-	1. And this line is back to the second level
-		*  Out to third level again
-*  And back to the first level
+1.  Для упорядоченных списков поставьте число и точку
+2.  В каждой строке, которую вы хотите пронумеровать.
+9.  Необязательно, чтобы порядок нумерации был правильным.
+5.  Главное, чтобы в каждой строке был номер.
 ~~~
-*  To nest lists you just add four spaces before the * or number
-	1. Like this
-		*  It's pretty basic, this line has eight spaces, so its nested twice
-	1. And this line is back to the second level
-		*  Out to third level again
-*  And back to the first level
+1.  Для упорядоченных списков поставьте число и точку
+2.  В каждой строке, которую вы хотите пронумеровать.
+9.  На самом деле это не обязательно должен быть правильный порядок чисел.
+5.  Пока каждая строка имеет номер
 
-## Italics and Bold
+
+## Вложенные списки
 
 ~~~
-Surround text you want *italics* with *asterisks* or _underscores_.
-
-**Double asterisks** or __double underscores__ makes text bold.
-
-***Triple*** will do *both at the same **time***.
+*  Чтобы сделать списки вложенными, просто добавьте четыре пробела перед * или числом.
+	1. Вот так
+		* Всё довольно просто: в этой строке восемь пробелов, поэтому она вложена дважды.
+	1. И эта строка возвращается на второй уровень.
+		* Снова на третий уровень.
+*  И возвращается на первый уровень.
 ~~~
-Surround text you want *italics* with *asterisks* or _underscores_.
+*  Чтобы сделать списки вложенными, просто добавьте четыре пробела перед * или числом.
+	1. Вот так
+		* Всё довольно просто: в этой строке восемь пробелов, поэтому она вложена дважды.
+	1. И эта строка возвращается на второй уровень.
+		*  Снова на третий уровень.
+* И возвращается на первый уровень.
+## Курсив и полужирный шрифт.
 
-**Double asterisks** or __double underscores__ makes text **bold**.
+~~~
+Обведите текст, который хотите *выделить* курсивом, *звёздочками* или _подчёркиваниями_.
 
-___Triple___ will do *both at the same **time***.
+**Двойные звёздочки** или __двойные подчёркивания__ делают текст жирным.
 
-## Horizontal Rules
+***Тройной*** сделает *оба одновременно***.
+~~~
+Объедините текст, который хотите *выделить* *звёздочками* или _подчёркивания_.
 
-Horizontal rules are made by placing 3 or more hyphens, asterisks, or underscores on a line by themselves.
+**Двойные звёздочки** или __двойные подчёркивания__ делают текст **жирным**.
+
+___Тройной___ сделает *оба одновременно***.
+
+## Горизонтальные линии
+
+Горизонтальные линии создаются путём размещения трёх или более дефисов, звёздочек или подчёркиваний на одной строке.
+
 ~~~
 ---
 * * * *
@@ -141,97 +138,97 @@ _____________________
 * * * *
 _____________________
 
-## Images
+## Изображения
 
-Image syntax looks like this:
+Синтаксис изображения выглядит следующим образом:
 
 	![Alt text](/path/to/img.jpg)
-	
-	![Alt text](/path/to/img.jpg "Optional title")
 
-[!!] Note that the images in userguide are [namespaced](#namespacing).
+	![Alt text](/path/to/img.jpg "Необязательное название")
 
-## Tables
+[!!] Обратите внимание, что изображения в руководстве пользователя имеют [namespacing](#namespacing).
+
+## Таблицы
 ~~~
-First Header  | Second Header
-------------- | -------------
-Content Cell  | Content Cell
-Content Cell  | Content Cell
+Первый заголовок  | Второй заголовок
+---------------   | ----------------
+Содержимое ячейки | Содержимое ячейки
+Содержимое ячейки | Содержимое ячейки
 ~~~
 
-First Header  | Second Header
-------------- | -------------
-Content Cell  | Content Cell
-Content Cell  | Content Cell
+Первый заголовок  | Второй заголовок
+----------------- | -------------
+Содержимое ячейки | Содержимое ячейки
+Содержимое ячейки | Содержимое ячейки
 
-Note that the pipes on the very left and very right side are optional, and you can change the text-alignment by adding a colon on the right, or on both sides for center.
+Обратите внимание, что вертикальные линии слева и справа необязательны. Вы можете изменить выравнивание текста, добавив двоеточие справа или по центру с обеих сторон.
 ~~~
-| Item      | Value | Savings |
+| Товар     | Стоимость | Экономия |
+| --------- | ---------:|:--------:|
+| Компьютер | 1600 $ |   40%   |
+| Телефон   | 12 $ |   30%   |
+| Труба     | 1 $ |    0%   |
+~~~
+| Товар | Стоимость | Экономия |
 | --------- | -----:|:-------:|
-| Computer  | $1600 |   40%   |
-| Phone     |   $12 |   30%   |
-| Pipe      |    $1 |    0%   |
-~~~
-| Item      | Value | Savings |
-| --------- | -----:|:-------:|
-| Computer  | $1600 |   40%   |
-| Phone     |   $12 |   30%   |
-| Pipe      |    $1 |    0%   |
+| Компьютер | 1600 $ | 40% |
+| Телефон | 12 $ | 30% |
+| Труба | 1 $ | 0% |
 
-# Userguide Specific Syntax
+# Синтаксис, специфичный для руководства пользователя
 
-In addition to the features and syntax of [Markdown](http://daringfireball.net/projects/markdown/) and [Markdown Extra](http://michelf.com/projects/php-markdown/extra/) the following apply to userguide pages and api documentation:
+Помимо функций и синтаксиса [Markdown](http://daringfireball.net/projects/markdown/) и [Markdown Extra](http://michelf.com/projects/php-markdown/extra/), к страницам руководства пользователя и документации API применимы следующие правила:
 
-## Namespacing
+## Пространства имён
 
-The first thing to note is that all links are "namespaced" to the current module.  For example, from anywhere within the Kohana core docs you do not need to include `kohana` at the beginning of a link url.  For example: `[Hello World Tutorial](tutorials/hello-world)` rather than `(kohana/tutorials/hello-world)`.
+Прежде всего, следует отметить, что все ссылки привязаны к текущему модулю. Например, из любой части основной документации Kohana вам не нужно добавлять `kohana` в начало URL-адреса ссылки. Например: `[Hello World Tutorial](tutorials/hello-world)` вместо `(kohana/tutorials/hello-world)`.
 
-To link to a modules index page, have an empty url like: `[Kohana]()`.
+Чтобы создать ссылку на страницу индекса модулей, используйте пустой URL-адрес, например: `[Kohana]()`.
 
-To link to page in a different module, prefix your url with `../` and the module name.  For example: `[Kohana Routes](../kohana/routing)`
+Чтобы создать ссылку на страницу в другом модуле, добавьте к URL префикс `../` и имя модуля. Например: `[Kohana Routes](../kohana/routing)`
 
-**Images are also namespaced**, using `![Alt Text](imagename.jpg)` would look for `media/guide/<modulename>/imagename.jpg`.
+**Изображения также находятся в пространстве имён**. Использование `![Alt ​​Text](imagename.jpg)` приведёт к поиску `media/guide/<modulename>/imagename.jpg`.
 
-[!!] If you want your userguide pages to be browsable on github or similar sites outside Kohana's own userguide module, specify the optional .md file extension in your links
+[!!] Если вы хотите, чтобы ваши страницы с руководствами пользователя были доступны для просмотра на GitHub или аналогичных сайтах вне модуля Kohana userguide, укажите в ссылках необязательное расширение файла .md.
 
-## API Links
+## Ссылки на API
 
-You can make links to the api browser by wrapping any class name in brackets.  You may also include a function name, or propery name to link to that specifically.  All of the following will link to the API browser:
+Вы можете создавать ссылки на API-браузер, заключив имя любого класса в скобки. Вы также можете указать имя функции или свойство, чтобы ссылаться именно на него. Все следующие элементы будут ссылаться на браузер API:
 
-	[Request]  
-	[Request::execute]  
-	[Request::execute()]  
-	[Request::$status]  
+	[Request]
+	[Request::execute]
+	[Request::execute()]
+	[Request::$status]
 
-[Request]  
-[Request::execute]  
-[Request::execute()]  
-[Request::$status]  
+[Request]
+[Request::execute]
+[Request::execute()]
+[Request::$status]
 
-If you want to have parameters and have the function be clickable, only put the brackets around the class and function (not the params), and put a backslash in front of the opening parenthesis.
+Если вы хотите задать параметры и сделать функцию кликабельной, заключите в скобки только класс и функцию (но не параметры), а перед открывающейся скобкой добавьте обратную косую черту.
 
 	[Kohana::$config]\('foobar','baz')
 	
 [Kohana::$config]\('foobar','baz')
 
-## Notes
+## Примечания
 
-If you put `[!!]` in front of a line it will be a "note" and be placed in a box with a lightbulb.
+Если вы добавите `[!!]` в начале строки, она будет преобразована в «примечание» и заключена в квадрат с лампочкой.
 
-	[!!]  This is a note
+	[!!] Это заметка
 
-will display as:
-	
-[!!] This is a note
+будет отображаться как:
 
-## Headers automatically get IDs
+	[!!] Это заметка
 
-Headers are automatically assigned an id, based on the content of the header, so each header can be linked to. You can manually assign a different id using the syntax as defined in Markdown Extra. If multiple headers have the same content (e.g. more than one "Examples" header), only the first will get be automatically assigned an id, so you should manually assign more descriptive ids. For example:
+## Заголовкам автоматически присваиваются идентификаторы get IDs
 
-	### Examples     {#more-descriptive-id}
+Заголовкам автоматически присваиваются идентификаторы на основе их содержимого, поэтому на каждый заголовок можно ссылаться. Вы можете вручную назначить другой идентификатор, используя синтаксис, описанный в Markdown Extra. Если несколько заголовков имеют одинаковое содержимое (например, несколько заголовков «Примеры»), только первому будет автоматически присвоен идентификатор, поэтому вам следует вручную назначить более описательные идентификаторы. Например:
 
-## Including Views
+	### Примеры {#more-descriptive-id}
 
-If you need you may include a regular Kohana View file by placing the name of the view in double curly brackets.  **If the view is not found, no error or exception will be shown, the curly brackets and view name will simply remain there!**
+## Включение Views
+
+При необходимости вы можете включить обычный файл представления Kohana, заключив имя представления в двойные фигурные скобки. **Если представление не найдено, ошибка или исключение не будут отображены, фигурные скобки и имя представления останутся на месте!**
 
 	{{some/view/file}}

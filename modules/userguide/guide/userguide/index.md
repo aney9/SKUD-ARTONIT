@@ -1,3 +1,3 @@
-# Userguide
+# Руководство пользователя
 
-The userguide module provides documentation viewing including browsing the source code comments.
+Модуль руководства пользователя обеспечивает просмотр документации, включая просмотр комментариев к исходному коду.

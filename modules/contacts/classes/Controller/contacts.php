@@ -1253,8 +1253,57 @@ class Controller_Contacts extends Controller_Template
 		$this->redirect('contacts/cardlist/' . Arr::get($post, 'id'));
 	}
 	
-	
-	
+	public function action_addPeople() {
+       // Получение параметра id_org из запроса
+        $force_org = Arr::get($_GET, 'id_org');
+
+        // Инициализация переменных
+        $people = new Guest2();
+        $alert = null;
+
+        // Загрузка списка организаций из модели
+        $organizations = $people->getOrganizations();
+
+        // Обработка POST-данных
+        if ($_POST) {
+            $people->surname = trim(Arr::get($_POST, 'surname', ''));
+            $people->name = trim(Arr::get($_POST, 'name', ''));
+            $people->patronymic = trim(Arr::get($_POST, 'patronymic', ''));
+            $people->login = trim(Arr::get($_POST, 'username', ''));
+            $people->pswd = trim(Arr::get($_POST, 'password', ''));
+            $people->idOrgGuest = trim(Arr::get($_POST, 'organization', ''));
+            $people->note = trim(Arr::get($_POST, 'note', ''));
+
+            // Логирование для отладки
+            Log::instance()->add(Log::DEBUG, 'POST-данные: ' . print_r($_POST, true));
+    
+                $result = $people->addPeople();
+                if ($result) {
+                    $this->session->set('alert', __('Пользователь успешно добавлен'));
+                    $this->redirect('contacts/addPeople');
+                } else {
+                    $this->session->set('alert', $people->actionDesc);
+                }
+            
+        }
+
+        // Получение сообщения из сессии
+        $alert = $this->session->get('alert');
+        $this->session->delete('alert');
+
+        // Формирование верхней панели кнопок
+        $topbuttonbar = View::factory('contacts/topbuttonbar', array(
+            'id_pep' => isset($people->id),
+            '_is_active' => 'acl',
+        ));
+
+        // Формирование представления
+        $this->template->content = View::factory('contacts/addPeople')
+            ->bind('alert', $alert)
+            ->bind('organizations', $organizations)
+            ->bind('force_org', $force_org)
+            ->bind('topbuttonbar', $topbuttonbar);
+    }
 
 	
 }

@@ -1,19 +1,19 @@
-# Configuration
+# Конфигурация
 
-The userguide has the following config options, available in `config/userguide.php`.
+Руководство пользователя имеет следующие параметры конфигурации, доступные в файле `config/userguide.php`.
 
 	return array
 	(
-		// Enable the API browser.  TRUE or FALSE
-		'api_browser'  => TRUE,
+		// Включить браузер API. TRUE или FALSE
+		'api_browser' => TRUE,
 
-		// Enable these packages in the API browser.  TRUE for all packages, or a string of comma seperated packages, using 'None' for a class with no @package
-		// Example: 'api_packages' => 'Kohana,Kohana/Database,Kohana/ORM,None',
+		// Включить эти пакеты в браузере API. TRUE для всех пакетов или строка пакетов, разделенных запятыми, используя 'None' для класса без @package
+		// Пример: 'api_packages' => 'Kohana,Kohana/Database,Kohana/ORM,None',
 		'api_packages' => TRUE,
 
 	);
 
-You can enable or disable the entire API browser, or limit it to only show certain packages.  To disable a module from showing pages in the userguide, simply change that module's `enabled` option using the cascading filesystem.  For example:
+Вы можете включить или отключить весь браузер API или ограничить его отображением только определенных пакетов. Чтобы отключить отображение страниц модуля в руководстве пользователя, просто измените параметр `enabled` этого модуля с помощью каскадной файловой системы. Например:
 
 	`application/config/userguide.php`
 
@@ -32,4 +32,4 @@ You can enable or disable the entire API browser, or limit it to only show certa
 		)
 	)
 
-Using this you could make the userguide only show your modules and classes in the API browser, if you wanted to host your own documentation on your site.  Feel free to change the styles and views as well, but be sure to give credit where credit is due!
+Используя это, вы можете сделать так, чтобы руководство пользователя отображало только ваши модули и классы в браузере API, если вы хотите разместить собственную документацию на своём сайте. Не стесняйтесь изменять стили и представления, но не забудьте указать авторство, где оно необходимо!

@@ -59,6 +59,7 @@ class Model_Order extends Model
             p."SURNAME" AS p_surname, 
             gu.timeplan,
 			gu.timeorder,
+			p."ID_PEP" as id_pep,
             c_g.id_card AS guest_card_number,
             c_g."CREATEDAT" as createdat
         FROM guestorder gu 

@@ -210,6 +210,12 @@ return [
 									'title'   => 'Регистрация гостя',
 									'tooltip' => 'sidebar.addguest2',
 								],
+						'settings'=>[
+									'url' => 'order/settings',
+									'icon'=>'',
+									'tittle'=>'Настройки',
+									'tooltip'=>'sidebar.settings'
+						]
 						
 							
 					]

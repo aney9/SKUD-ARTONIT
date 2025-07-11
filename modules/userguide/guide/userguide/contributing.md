@@ -1,75 +1,75 @@
-# Contributing
+# Участие
 
-Kohana is community driven, and we rely on community contributions for the documentation.
+Kohana — это проект, созданный сообществом, и мы полагаемся на его вклад в документацию.
 
-## Guidelines
+## Рекомендации
 
-Documentation should use complete sentences, good grammar, and be as clear as possible.  Use lots of example code, but make sure the examples follow the Kohana conventions and style.
+Документация должна содержать полные предложения, правильную грамматику и быть максимально понятной. Используйте много примеров кода, но следите за тем, чтобы они соответствовали соглашениям и стилю Kohana.
 
-Try to commit often, with each commit only changing a file or two, rather than changing a ton of files and commiting it all at once.  This will make it easier to offer feedback and merge your changes.   Make sure your commit messages are clear and descriptive.  Bad: "Added docs",  Good: "Added initial draft of hello world tutorial",  Bad: "Fixed typos",  Good: "Fixed typos on the query builder page"
+Старайтесь делать коммиты часто, изменяя каждый коммит только один-два файла, а не множество файлов и коммитя все сразу. Это упростит обратную связь и объединение изменений. Убедитесь, что сообщения к коммитам понятны и содержательны. Плохо: «Добавлена ​​документация», Хорошо: «Добавлен первоначальный черновик руководства Hello World», Плохо: «Исправлены опечатки», Хорошо: «Исправлены опечатки на странице конструктора запросов».
 
-If you feel a menu needs to be rearranged or a module needs new pages, please open a [bug report](http://dev.kohanaframework.org/projects/userguide3/issues/new) to discuss it.
+Если вы считаете, что меню нужно перестроить или модулю нужны новые страницы, пожалуйста, создайте [отчёт об ошибке](http://dev.kohanaframework.org/projects/userguide3/issues/new), чтобы обсудить это.
 
-## Quick Method
+## Быстрый способ
 
-To quickly point out something that needs improvement, report a [bug report](http://dev.kohanaframework.org/projects/userguide3/issues/new).
+Чтобы быстро указать на что-то, требующее улучшения, отправьте [отчёт об ошибке](http://dev.kohanaframework.org/projects/userguide3/issues/new).
 
-If you want to contribute some changes, you can do so right from your browser without even knowing git!
+Если вы хотите внести изменения, это можно сделать прямо в браузере, даже не зная Git!
 
-First create an account on [GitHub](https://github.com/signup/free).
+Сначала создайте учётную запись на [GitHub](https://github.com/signup/free).
 
-You will need to fork the module for the area you want to improve.  For example, to improve the [ORM documentation](../orm) fork <http://github.com/kohana/orm>.  To improve the [Kohana documentation](../kohana), fork <http://github.com/kohana/core>, etc.  So, find the module you want to improve and click on the Fork button in the top right.
+Вам потребуется создать форк модуля для той области, которую вы хотите улучшить. Например, для улучшения [документации ORM](../orm) создайте форк <http://github.com/kohana/orm>. Для улучшения [документации Kohana](../kohana) создайте форк <http://github.com/kohana/core> и т. д. Итак, найдите модуль, который хотите улучшить, и нажмите кнопку «Fork» в правом верхнем углу.
 
-![Fork the module](contrib-github-fork.png)
+![Создать форк модуля](contrib-github-fork.png)
 
-The files that make the User Guide portion are found in `guide/<module>/`, and the API browser portion is made from the comments in the source code itself.  Navigate to one of the files you want to change and click the edit button in the top right of the file viewer.
+Файлы, составляющие руководство пользователя, находятся в папке `guide/<module>/`, а раздел обозревателя API формируется из комментариев в самом исходном коде. Перейдите к одному из файлов, который вы хотите изменить, и нажмите кнопку редактирования в правом верхнем углу окна просмотра файлов.
 
-![Click on edit to edit the file](contrib-github-edit.png)
+![Нажмите «Изменить», чтобы отредактировать файл](contrib-github-edit.png)
 
-Make the changes and add a **detailed commit message**.  Repeat this for as many files as you want to improve. (Note that you can't preview what the changes will look unless you actually test it locally.)
+Внесите изменения и добавьте **подробное сообщение о коммите**. Повторите это для всех файлов, которые вы хотите улучшить. (Обратите внимание, что вы не сможете предварительно просмотреть, как будут выглядеть изменения, без локального тестирования.)
 
-After you have made your changes, send a pull request so your improvements can be reviewed to be merged into the official documentation.
+После внесения изменений отправьте запрос на извлечение, чтобы ваши улучшения были рассмотрены и включены в официальную документацию.
 
-![Send a pull request](contrib-github-pull.png)
+![Отправить запрос на извлечение](contrib-github-pull.png)
 
-Once your pull request has been accepted, you can delete your repository if you want.  Your commit will have been copied to the official branch.
+После того, как ваш запрос на извлечение будет принят, вы можете удалить свой репозиторий, если хотите. Ваш коммит будет скопирован в официальную ветку.
 
-## If you know Git
+## Если вы знаете Git
 
-### Short version
+### Краткая версия
 
-Fork the module whose docs you wish to improve (e.g. `git://github.com/kohana/orm.git` or `git://github.com/kohana/core.git`), checkout the `3.2/develop` branch (for the 3.2 docs), make changes, and then send a pull request.
+Сделайте форк модуля, документацию которого вы хотите улучшить (например, `git://github.com/kohana/orm.git` или `git://github.com/kohana/core.git`), проверьте ветку `3.2/develop` (документация 3.2), внесите изменения и отправьте запрос на извлечение.
 
-### Long version
+### Длинная версия
 
-(This still assumes you at least know your way around Git, especially how submodules work.)
+(Предполагается, что вы хотя бы немного знакомы с Git, особенно с работой подмодулей.)
 
- 1. Fork the specific repo you want to contribute to on GitHub. (For example, go to http://github.com/kohana/core and click the fork button.)
+1. Сделайте форк конкретного репозитория на GitHub, в который вы хотите внести изменения. (Например, перейдите по адресу http://github.com/kohana/core и нажмите кнопку «fork».)
 
- 1. Now you need to add your fork as a "git remote" to your application and ensure you are on the right branch. An example for the [ORM](../orm) module and 3.2 docs:
+1. Теперь вам нужно добавить свой форк как «git remote» в ваше приложение и убедиться, что вы находитесь на нужной ветке. Пример для модуля [ORM](../orm) и документации /3.2:
 
 		cd my-kohana-app/modules/orm
 
-		# add your repository as a new remote
-		git remote add <your name> git://github.com/<your name>/orm.git
+		# добавьте свой репозиторий как новый удалённый репозиторий
+		git remote add <ваше имя> git://github.com/<ваше имя>/orm.git
 
-		# Get the correct branch
+		# Получите нужную ветку
 		git checkout 3.2/develop
+~~~
+1. Теперь перейдите в репозиторий с разделом документации, в который вы хотите внести свой вклад, добавьте свой форк репозитория как новый удалённый репозиторий и отправьте изменения в него.
 
- 1. Now go into the repo of the area of docs you want to contribute to and add your forked repo as a new remote, and push to it.
+	cd my-kohana-app/modules/orm
 
-		cd my-kohana-app/modules/orm
-
-		# Make some changes to the docs
+		# Внесите изменения в документацию
 		nano file.md
 
-		# Commit your changes - Use a descriptive commit message! If there is a redmine ticket for the changes you are making include "Fixes #XXXXX" in the commit message so its tracked.
-		git commit -a -m "Corrected a typo in the ORM docs. Fixes #12345."
+		# Зафиксируйте изменения — используйте информативное сообщение о коммите! Если для вносимых вами изменений есть тикет Redmine, добавьте в сообщение о коммите «Исправления #XXXXX», чтобы его можно было отслеживать.
+		git commit -a -m "Исправлена ​​опечатка в документации ORM. Исправления #12345."
 
-		# make sure we are up to date with the latest changes
+		# Убедитесь, что мы в курсе последних изменений
 		git merge origin/3.2/develop
 
-		# Now push your changes to your fork.
-		git push <your name> 3.2/develop
+		# Теперь отправьте свои изменения в ваш форк.
+		git push <ваше имя> 3.2/develop
 
- 1. Finally, send a pull request on GitHub.
+1. Наконец, отправьте запрос на извлечение на GitHub.

@@ -1,10 +1,10 @@
-## [Userguide]()
+## [Руководство пользователя]()
 
-- Getting Started
-   - [Using the Userguide](using)
-   - [How the Userguide works](works)
-   - [Configuration](config)
-- Learning More
-   - [Contributing](contributing)
-   - [Markdown Syntax](markdown)
-   - [Adding your module](adding)
+- Начало работы
+   - [Использование руководства пользователя](using)
+   - [Как работает руководство пользователя](works)
+   - [Конфигурация](config)
+- Подробнее
+   - [Участие в разработке](contributing)
+   - [Синтаксис Markdown](markdown)
+   - [Добавление своего модуля](adding)

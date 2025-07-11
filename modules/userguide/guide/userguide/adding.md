@@ -1,75 +1,79 @@
-# Adding your module
+# Добавление модуля
 
-Making your module work with the User Guide is simple.
+Настроить работу модуля с помощью руководства пользователя очень просто.
 
-First, copy this config and place in it `<module>/config/userguide.php`, replacing anything in `<>` with the appropriate values:
-
+Сначала скопируйте этот файл конфигурации и поместите в него `<module>/config/userguide.php`, заменив все содержимое `<>` соответствующими значениями:
+~~~
 	return array
 	(
 		// Leave this alone
 		'modules' => array(
 
 			/*
-			 * The path to this module's userguide pages, without the 'guide/'.
-			 *
-			 * For example,  '/guide/modulename/' would be 'modulename'
+			* Путь к страницам руководства пользователя этого модуля без 'guide/'.
+			*
+			* Например,   '/guide/modulename/' would be 'modulename'
 			 */
 			'<modulename>' => array(
 
-				// Whether this module's user guide pages should be shown
-				'enabled' => TRUE,
+			// Должны ли отображаться страницы руководства пользователя этого модуля
 
-				// The name that should show up on the user guide index page
-				'name' => '<Module Name>',
+			'enabled' => TRUE,
 
-				// A short description of this module, shown on the index page
-				'description' => '<Description goes here>',
+			// Имя, которое должно отображаться на главной странице руководства пользователя
 
-				// Copyright message, shown in the footer for this module
-				'copyright' => '&copy; 2012 <Your Name>',
+			'name' => '<Имя модуля>',
+
+			// Краткое описание этого модуля, отображаемое на главной странице
+
+			'description' => '<Здесь должно быть описание>',
+
+			// Сообщение об авторских правах, отображаемое в нижнем колонтитуле этого модуля
+
+			'copyright' => '&copy; 2012 <Ваше имя>',
 			)
 		),
 
 		/*
-		 * If you use transparent extensions outside the Kohana_ namespace,
-		 * add your class prefix here. Both common Kohana naming conventions are
-		 * excluded:
-		 *   - Modulename extends Modulename_Core
-		 *   - Foo extends Modulename_Foo
-		 *
-		 * For example, if you use Modulename_<class_name> for your base classes
-		 * then you would define:
-		 */
+		* Если вы используете прозрачные расширения вне пространства имён Kohana_,
+		* добавьте сюда префикс вашего класса. Оба распространённых соглашения об именовании Kohana
+		* исключены:
+		* - Modulename extends Modulename_Core
+		* - Foo extends Modulename_Foo
+		*
+		* Например, если вы используете Modulename_<имя_класса> для базовых классов,
+		* то вы должны определить:
+		*/
 		'transparent_prefixes' => array(
 			'Modulename' => TRUE,
 		)
 	);
+~~~
+Затем создайте в каталоге вашего модуля папку с именем `guide/<имя_модуля>` и файлы `index.md` и `menu.md`. Содержимое `index.md` отображается на главной странице вашего модуля.
 
-Next, create a folder in your module directory called `guide/<modulename>` and create `index.md` and `menu.md`.  The contents of `index.md` is what is shown on the index page of your module.
+## Создание бокового меню
 
-## Creating the side menu
+Содержимое файла `menu.md` отображается в боковой колонке и должно быть отформатировано следующим образом:
 
-The contents of the `menu.md` file is what shows up in the side column and should be formatted like this:
+	## [Имя модуля]()
+	 - [Имя страницы](путь к странице)
+	 - [Это категория](категория)
+		- [Подстраница](категория/подстраница)
+		- [Другая](категория/другая)
+			- [Подстраница](категория/другая/подстраница)
+	- Категории не обязательно должны быть ссылками на страницы
+		- [И так далее](и т.д.)
 
-	## [Module Name]()
-	 - [Page name](page-path)
-	 - [This is a Category](category)
-		 - [Sub Page](category/sub-page)
-		 - [Another](category/another)
-			 - [Sub sub page](category/another/sub-page)
-	 - Categories do not have to be a link to a page
-		 - [Etcetera](etc)
+Вы можете создавать элементы, не являющиеся связанными страницами (категории, не имеющие соответствующих страниц).
 
-You can have items that are not linked pages (a category that doesn't have a corresponding page).
+Страницы руководства можно именовать и располагать в этой папке любым удобным для вас способом (за исключением `index.md` и `menu.md`, которые должны располагаться непосредственно под папкой `guide/`).
 
-Guide pages can be named or arranged any way you want within that folder (with the exception of `index.md` and `menu.md` which must appear directly below the `guide/` folder).
+## Форматирование заголовков страниц и ссылок
 
-## Formatting page titles and links
+Пути к страницам указываются относительно `guide/<modulename>`. Таким образом, `[Page name](page-name)` будет искать `guide/<modulename>/page-name.md`, а `[Another](category/another)` будет искать `guide/<modulename>/category/another.md`.
 
-Page paths are relative to `guide/<modulename>`.  So `[Page name](page-name)` would look for `guide/<modulename>/page-name.md` and `[Another](category/another)` would look for `guide/<modulename>/category/another.md`.
+Навигационная цепочка и заголовки страниц берутся из файла `menu.md`, а не из имён файлов или путей.
 
-The breadcrumbs and page titles are pulled from the `menu.md` file, not the filenames or paths.
+Для ссылки на страницу `index.md` необходимо использовать пустую ссылку, например, `[Module Name]()`. Не добавляйте `.md` в ссылки.
 
-To link to the `index.md` page, you should have an empty link, e.g. `[Module Name]()`.  Do not include `.md` in your links.
-
-All user guide pages use [Markdown](markdown).
+Все страницы руководств пользователя используют [Markdown](markdown).

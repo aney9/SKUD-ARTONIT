@@ -1,1 +1,1 @@
-Give tips on how to most effectively use the user guide.  How to navigate around, how things are organized, etc. 
+Дайте советы о том, как наиболее эффективно использовать руководство пользователя. Как ориентироваться, как организованы материалы и т. д.

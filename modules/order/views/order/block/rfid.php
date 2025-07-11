@@ -68,7 +68,7 @@ if (count($cardlist) > 0) {
                     ?>
                     <input type="text" id="idcard" name="idcard" value="<?php if (isset($card)) echo Arr::get($card, 'ID_CARD'); ?>" title="<?php echo $title; ?>" style="width: 120px;" />
                     <br />
-                    <?php echo $comment; ?>
+                    
                     <p><?php echo Form::radio('rfidmode', 0, true) . __('RFID'); ?></p>
                     <p><?php echo Form::radio('rfidmode', 2) . __('RFID Mifare Encrytped'); ?></p>
                     <p><?php echo Form::radio('rfidmode', 3) . __('RFID LR UHF'); ?></p>

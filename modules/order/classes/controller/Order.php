@@ -159,6 +159,9 @@ class Controller_Order extends Controller_Template
 
 	$user = new User();
 	$id_pep = $user->id_pep;
+	$buro = new Buro();
+	$buro_list= $buro->get_id_buro_forUser($id_pep);
+	//echo Debug::vars('164', $buro_list);exit;
 
 	//echo Debug::vars($id_pep);exit;
 	//$id_org = $auth_user['ID_ORG'];
@@ -239,14 +242,14 @@ class Controller_Order extends Controller_Template
 					
 					
 					//$guest->numdoc=Arr::get($_POST, 'numdoc','');
-					//$guest->datedoc=Arr::get($_POST, 'datedoc','');
+					$guest->docdate=Arr::get($_POST, 'datedoc','');
 					//$guest->note=Arr::get($_POST, 'note','');
 					
 					$guest->note=Arr::get($_POST, 'note','');
 					//echo Debug::vars('246', $guest);exit;
 
 
-					
+					//echo Debug::vars('252', $_POST);exit;
 					//echo Debug::vars('249',$guest->addGuest());exit;
 
 
@@ -364,9 +367,10 @@ class Controller_Order extends Controller_Template
 				$guest->patronymic=Arr::get($_POST, 'patronymic','');
 				$guest->surname=Arr::get($_POST, 'surname','');
 				$guest->numdoc=Arr::get($_POST, 'docnum1','').'#'.Arr::get($_POST, 'docnum2','');
-				$guest->datedoc=Arr::get($_POST, 'datedoc','');
+				$guest->docdate=Arr::get($_POST, 'datedoc','');
 				$guest->note=Arr::get($_POST, 'note','');
 				$guest -> update($guest->id);
+				//echo Debug::vars('373', $guest -> update($guest->id));exit;
 				
 				
 				$order=new Order(Arr::get($_POST, 'id_order', 0));
@@ -451,6 +455,7 @@ class Controller_Order extends Controller_Template
     //echo Debug::vars('415', $_POST);exit;
     $id_pep = $this->request->param('id'); // кого редактируем
     $mode = $this->request->param('mode'); // режим работы
+	//echo Debug::vars('454', $mode);exit;
 
     $force_org = $this->request->query('id_org'); // получаю id_org, куда надо записать гостя. наличие этого параметра означает, что надо выбрать именно указанную организацию
     
@@ -473,7 +478,14 @@ class Controller_Order extends Controller_Template
 	//echo Debug::vars('473', $id_pep);exit;
     $cardlist = $key->getListByPeople($id_pep, 1);
 	//echo Debug::vars('474', $cardlist);exit;
-    
+	$user = new User();
+	//$id_user = $user -> id_pep;
+	if ($user->id_role == 1) {
+		if ($mode == 'guest_mode') {
+            $mode = 'buro';
+        }
+	}
+	//echo Debug::vars('485', $mode);exit;
     $this->template->content = View::factory('order/edit')
         ->bind('id_pep', $id_pep)
         ->bind('contact', $contact)
@@ -490,7 +502,8 @@ class Controller_Order extends Controller_Template
         ->bind('topbuttonbar', $topbuttonbar)
         ->bind('surname', $surname)
         ->bind('', $timeend)
-        ->bind('', $timestart);
+        ->bind('', $timestart)
+		->bind('guest', $guest);
 }
 
 	public function _action__view()
@@ -1053,6 +1066,25 @@ class Controller_Order extends Controller_Template
 		
 		
 		}
+
+		public function action_settings() {
+        $buro = new Buro();
+		$buros = $buro->getList();
+		//echo Debug::vars('1068', $buro->getList());exit;
+        
+        $this->template->content = View::factory('order/settings')
+            ->set('buros', $buros);
+    }
+
+	public function action_buro_details(){
+		$id_buro = $this->request->param('id');
+		//echo Debug::vars('1077', $id_buro);exit;
+		$buro = new Buro();
+		$buros = $buro->getList($id_buro);
+		//echo Debug::vars('1080', $buros);exit;
+		$this->template->content = View::factory('order/buro_details')
+        ->set('buro', reset($buros));
+	}
 	
 
 }
