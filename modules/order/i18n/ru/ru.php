@@ -10,7 +10,7 @@ return array
 	'key.avaliableBefor'	=>'Действительно до',
 	'passoffices.resultUpdateAcl'	=>'Успешно добавлено addAclOkCount категорий доступа<br>Успешно удалено :delAclOkCount категорий доступа',
 	'passoffices.regcard'=>'Номер гостевой карты',
-	'passoffices.note'=>'Записи',
+	'passoffices.note'=>'Цели визита/записи',
 	'passoffice.config_title'=>'Конфигурация бюро пропусков ":name"',
 	'passoffice.confname'=>'Параметр',
 	'passoffice.confcode'=>'Значение',

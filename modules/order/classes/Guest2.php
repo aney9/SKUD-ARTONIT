@@ -152,14 +152,16 @@ class Guest2
 		$this->id_pep=Arr::get($result, 'GEN_ID');
 		
 		//echo Debug::vars('109', Arr::get($result, 'GEN_ID')); exit;
-		$sql=__('INSERT INTO people (id_pep, id_db, surname, name, patronymic, id_org, note) 
-                VALUES (:id,1, \':surname\', \':name\', \':patronymic\',:org,  \':note\')', array
+		$sql=__('INSERT INTO people (id_pep, id_db, surname, name, patronymic, id_org, numdoc, datedoc, note) 
+                VALUES (:id,1, \':surname\', \':name\', \':patronymic\',:org, \':numdoc\', \':datedoc\',  \':note\')', array
 			(
 				':id'			=> $this->id_pep,
 				':surname'		=> iconv('UTF-8', 'CP1251',$this->surname),
 				':name'			=> iconv('UTF-8', 'CP1251',$this->name),
 				':patronymic'	=> iconv('UTF-8', 'CP1251',$this->patronymic),
 				':org'			=> $this->idOrgGuest,
+				':numdoc'       => $this->numdoc,
+				':datedoc'      => $this->docdate,
 				':note'			=> iconv('UTF-8', 'CP1251',$this->note))
 				);
 

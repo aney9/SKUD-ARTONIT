@@ -33,12 +33,17 @@
                     <?php
                     $docnum1 = '';
                     $docnum2 = '';
-                    if (strpos($guest->numdoc, '#') !== false) {
-                        $doc_parts = explode('#', $guest->numdoc);
-                        $docnum1 = htmlspecialchars($doc_parts[0]);
+                    $currentDocType = '';
+                    
+                    if (!empty($guest->numdoc)) {
+                        $parts = explode('@', $guest->numdoc, 2);
+                        $doc_data = isset($parts[0]) ? $parts[0] : '';
+                        $currentDocType = isset($parts[1]) ? $parts[1] : '';
+                        
+                        // Затем разделяем серию и номер по #
+                        $doc_parts = explode('#', $doc_data);
+                        $docnum1 = htmlspecialchars(isset($doc_parts[0]) ? $doc_parts[0] : '');
                         $docnum2 = isset($doc_parts[1]) ? htmlspecialchars($doc_parts[1]) : '';
-                    } else {
-                        $docnum1 = htmlspecialchars($guest->numdoc);
                     }
                     ?>
                     <input type="text" size="8" name="docnum1" id="docnum1" value="<?php echo $docnum1; ?>" />
@@ -48,20 +53,35 @@
                     <label for="datedoc"><?php echo __('contact.datedoc'); ?></label>
                     <br />
                     <input type="text" name="datedoc" id="datedoc" value="<?php 
-    if (!is_null($guest->docdate) && $guest->docdate) {
-        try {
-            $date = new DateTime($guest->docdate);
-            echo htmlspecialchars($date->format('d.m.Y'));
-        } catch (Exception $e) {
-            echo date('d.m.Y');
-        }
-    } else {
-        echo date('d.m.Y');
-    }
-?>" style="width: 100px;" />
-                    <br />
-                    <span class="error" id="error31" style="color: red; display: none;"><?php echo __('contact.emptydatedoc'); ?></span>
-                    <span class="error" id="error32" style="color: red; display: none;"><?php echo __('contact.wrongdatedoc'); ?></span>
+                        if (!is_null($guest->docdate) && $guest->docdate) {
+                            try {
+                                $date = new DateTime($guest->docdate);
+                                echo htmlspecialchars($date->format('d.m.Y'));
+                            } catch (Exception $e) {
+                                echo date('d.m.Y');
+                            }
+                        } else {
+                            echo date('d.m.Y');
+                        }
+                    ?>" style="width: 100px;" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding-top: 10px;">
+                    <label><?php echo __('Тип документа'); ?></label>
+                    <div style="margin-left: 10px;">
+                        <?php foreach (Documents::getDoc() as $id => $doc): ?>
+                            <div style="display: inline-block; margin-right: 15px;">
+                                <?php echo Form::radio(
+                                    'doc_type', 
+                                    $id, 
+                                    $currentDocType == $id,
+                                    array('id' => 'doctype_'.$id)
+                                ); ?>
+                                <label for="doctype_<?php echo $id; ?>" style="display: inline;"><?php echo htmlspecialchars($doc['docname']); ?></label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </td>
             </tr>
         </table>

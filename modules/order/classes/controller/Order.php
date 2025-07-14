@@ -240,7 +240,10 @@ class Controller_Order extends Controller_Template
 					$guest->patronymic=Arr::get($_POST, 'patronymic','');
 					$guest->surname=Arr::get($_POST, 'surname','');
 					
-					
+					$docnum1 = Arr::get($_POST, 'docnum1', '');
+					$docnum2 = Arr::get($_POST, 'docnum2', '');
+					$doc_type = Arr::get($_POST, 'doc_type', '');
+					$guest->numdoc = $docnum1 . '#' . $docnum2 . '@' . $doc_type;
 					//$guest->numdoc=Arr::get($_POST, 'numdoc','');
 					$guest->docdate=Arr::get($_POST, 'datedoc','');
 					//$guest->note=Arr::get($_POST, 'note','');
@@ -342,20 +345,27 @@ class Controller_Order extends Controller_Template
 					// перемещаю в архив
 					$guest->moveToArchive();
 					//делаю запись о ручном удалении карты
-					/*
-					не реализовано 7.07.2025
-					
-					*/
-					$alert=__('guest.forceexitOK', array(':name'=>iconv('CP1251', 'UTF-8',$guest->name),':surname'=>iconv('CP1251', 'UTF-8',$guest->surname),':patronymic'=>iconv('CP1251', 'UTF-8',$guest->patronymic)));
-					Session::instance()->set('alert',$alert);
-					
-				} else {
-					$alert=__('guest.forceexitErr', array(':name'=>iconv('CP1251', 'UTF-8',$guest->name),':surname'=>iconv('CP1251', 'UTF-8',$guest->surname),':patronymic'=>iconv('CP1251', 'UTF-8',$guest->patronymic)));
-					Session::instance()->set('alert',$alert);
-					
-				}
-					$this->redirect('order');
-			break;
+/*
+не реализовано 7.07.2025
+*/
+$alert = __('guest.forceexitOK', array(
+    ':name' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->name) ?: $guest->name,
+    ':surname' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->surname) ?: $guest->surname,
+    ':patronymic' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->patronymic) ?: $guest->patronymic
+));
+Session::instance()->set('alert', $alert);
+
+} else {
+    $alert = __('guest.forceexitErr', array(
+        ':name' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->name) ?: $guest->name,
+        ':surname' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->surname) ?: $guest->surname,
+        ':patronymic' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->patronymic) ?: $guest->patronymic
+    ));
+    Session::instance()->set('alert', $alert);
+}
+
+$this->redirect('order');
+break;
 			
 			case 'reissue':// выдача карты уже известному гостю + обновление данных о госте
 				//проверка что карта не выдана какому-нибудь гостю
@@ -366,7 +376,10 @@ class Controller_Order extends Controller_Template
 				$guest->name=Arr::get($_POST, 'name','');
 				$guest->patronymic=Arr::get($_POST, 'patronymic','');
 				$guest->surname=Arr::get($_POST, 'surname','');
-				$guest->numdoc=Arr::get($_POST, 'docnum1','').'#'.Arr::get($_POST, 'docnum2','');
+				$docnum1 = Arr::get($_POST, 'docnum1', '');
+				$docnum2 = Arr::get($_POST, 'docnum2',  '');
+				$doc_type = Arr::get($_POST, 'doc_type', '');
+				$guest->numdoc = $docnum1 . '#' . $docnum2 . '@' . $doc_type;
 				$guest->docdate=Arr::get($_POST, 'datedoc','');
 				$guest->note=Arr::get($_POST, 'note','');
 				$guest -> update($guest->id);
@@ -467,6 +480,8 @@ class Controller_Order extends Controller_Template
     
     $this->session->delete('alert');
     $this->session->delete('arrAlert');
+	$doc = new Documents();
+	//echo Debug::vars('478', $doc->getDocById($id = 2));exit;
     $topbuttonbar = View::factory('order/topbuttonbar', array(
         'id_pep' => $id_pep,
         '_is_active' => 'edit',

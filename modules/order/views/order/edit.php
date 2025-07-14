@@ -64,7 +64,7 @@ $user = new User();
                                 break;
                             case 'guest_mode':
                                 if ($user->id_role == 1){
-                                    include Kohana::find_file('views', 'order/block/rfid');
+                                    //include Kohana::find_file('views', 'order/block/rfid');
                                 }
                             case 'archive_mode':
                                 if (!empty($cardlist[0]['ID_CARD'])) {
