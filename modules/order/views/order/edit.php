@@ -62,9 +62,12 @@ $user = new User();
                             case 'newguest':
                                 include Kohana::find_file('views', 'order/block/card_dates');
                                 break;
-                            case 'guest_mode':
-                                if ($user->id_role == 1){
-                                    //include Kohana::find_file('views', 'order/block/rfid');
+                            case 'guest_mode':  
+                                if ($user -> id_role == 1){
+                                    include Kohana::find_file('views', 'order/block/rfid');
+                                    echo '<br>';
+                                    include Kohana::find_file('views', 'order/block/card_dates');
+                                    break;
                                 }
                             case 'archive_mode':
                                 if (!empty($cardlist[0]['ID_CARD'])) {
@@ -108,25 +111,40 @@ $user = new User();
                         echo Form::hidden('id_pep', $id_pep);
                         echo Form::hidden('todo', 'forceexit');
                         echo Form::close();
-                    } else if ($user->id_role == 1){
-                        echo Form::hidden('todo', 'reissue');
-                        echo Form::submit('reissue', __('Обновить233'));
-                        if (!empty($cardlist[0]['ID_CARD'])) {
-                            echo Form::hidden('todo', 'forceexit');
-                            echo Form::submit('reissue', __('Забрать карту!'));
-                        }
+                    } else if ($user->id_role == 1) {
+                        $mode = 'buro';
+    
+                    echo Form::hidden('todo', 'reissue'); 
+                    echo Form::submit('reissue', __('Обновить233'), [
+                        'onclick' => "this.form.elements.todo.value='reissue'"
+                    ]);
+                    
+                    if (!empty($cardlist[0]['ID_CARD'])) {
+                        echo Form::submit('forceexit', __('Забрать карту!'), [
+                            'onclick' => "this.form.elements.todo.value='forceexit'"
+                        ]);
+                    }
+
                     }
                     break;
                 case 'archive_mode':
+                    if ($user->id_role == 1){
+                        echo Form::hidden('todo', 'forceexit');
+                        echo Form::submit('forceexit', __('Забрать карту!133'));
+                    }
                     break;
                 case 'buro':
                     if ($user->id_role == 1) {
-                        echo Form::hidden('todo', 'reissue');
-                        echo Form::submit('reissue', __('Обновить233'));
-                        if (!empty($cardlist[0]['ID_CARD'])) {
-                            echo Form::hidden('todo', 'forceexit');
-                            echo Form::submit('reissue', __('Забрать карту!'));
-                        }
+                         echo Form::hidden('todo', 'reissue'); 
+                    echo Form::submit('reissue', __('Обновить233'), [
+                        'onclick' => "this.form.elements.todo.value='reissue'"
+                    ]);
+                    
+                    if (!empty($cardlist[0]['ID_CARD'])) {
+                        echo Form::submit('forceexit', __('Забрать карту!'), [
+                            'onclick' => "this.form.elements.todo.value='forceexit'"
+                        ]);
+                    }
                     } else {
                         echo Form::hidden('todo', 'savenew');
                         echo Form::submit('savenew', __('Добавить гостя230'));

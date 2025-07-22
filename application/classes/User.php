@@ -44,7 +44,7 @@ class User
     protected function getBuroNameForUser()
     {     
         $buro = new Buro();
-        return $buro->get_id_buro_forUser($this->id_pep);
+        //return $buro->get_id_buro_forUser($this->id_pep);
     }
     
     /**

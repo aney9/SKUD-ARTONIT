@@ -625,6 +625,40 @@ protected function formatDateForFirebird($date)
     return null;
 }
 
+public static function getPeopleById($id_pep_array)
+{
+    $result = [];
+    if (empty($id_pep_array)) {
+        return $result;
+    }
+
+    $id_pep_array = array_map('intval', $id_pep_array);
+    $id_pep_list = implode(',', $id_pep_array);
+
+    $sql = 'SELECT p.id_pep, p.surname, p.name, p.patronymic
+            FROM PEOPLE p
+            WHERE p.id_pep IN ('.$id_pep_list.')';
+
+    try {
+        $query = DB::query(Database::SELECT, $sql)
+            ->execute(Database::instance('fb'))
+            ->as_array();
+
+        foreach ($query as $row) {
+            $result[] = [
+                'id_pep' => $row['ID_PEP'],
+                'surname' => iconv('CP1251', 'UTF-8', Arr::get($row, 'SURNAME', '')),
+                'name' => iconv('CP1251', 'UTF-8', Arr::get($row, 'NAME', '')),
+                'patronymic' => iconv('CP1251', 'UTF-8', Arr::get($row, 'PATRONYMIC', ''))
+            ];
+        }
+    } catch (Exception $e) {
+        Log::instance()->add(Log::DEBUG, 'Error fetching people by id_pep: ' . $e->getMessage());
+    }
+
+    return $result;
+}
+
 public function update($id_pep)
 {
     $formattedDate = $this->formatDateForFirebird($this->docdate);
@@ -703,6 +737,54 @@ public function update($id_pep)
 			//echo Debug::vars('744', $this->id);exit;
             return $this->id;
     }
-	
+
+	public function getPeopleWithLogin() {
+    $sql = "SELECT 
+                p.id_pep AS id_pep, 
+                p.surname AS surname, 
+                p.name AS name, 
+                p.patronymic AS patronymic 
+            FROM people p
+            WHERE p.login IS NOT NULL 
+              AND p.login != ''
+              AND p.pswd IS NOT NULL
+              AND p.pswd != ''";
+    
+    $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance('fb'));
+    
+    $result = [];
+    foreach ($query->as_array() as $row) {
+        $result[] = [
+            'ID_PEP' => $row['ID_PEP'],
+            'SURNAME' => !empty($row['SURNAME']) ? iconv('CP1251', 'UTF-8', $row['SURNAME']) : '',
+            'NAME' => !empty($row['NAME']) ? iconv('CP1251', 'UTF-8', $row['NAME']) : '',
+            'PATRONYMIC' => !empty($row['PATRONYMIC']) ? iconv('CP1251', 'UTF-8', $row['PATRONYMIC']) : ''
+        ];
+    }
+    
+    return $result;
+}
+
+public function getUserById($id){
+	$sql = 'SELECT p.id_pep, p.surname, p.name, p.patronymic FROM people p
+	WHERE p.id_pep='.$id;
+
+
+	$query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance('fb'));
+    
+    $result = [];
+    foreach ($query->as_array() as $row) {
+        $result[] = [
+            'ID_PEP' => $row['ID_PEP'],
+            'SURNAME' => !empty($row['SURNAME']) ? iconv('CP1251', 'UTF-8', $row['SURNAME']) : '',
+            'NAME' => !empty($row['NAME']) ? iconv('CP1251', 'UTF-8', $row['NAME']) : '',
+            'PATRONYMIC' => !empty($row['PATRONYMIC']) ? iconv('CP1251', 'UTF-8', $row['PATRONYMIC']) : ''
+        ];
+    }
+    
+    return $result;
+}
 	
 }

@@ -107,22 +107,16 @@ if ($alert) { ?>
                         </td>
                         <td>
                             <?php 
-                            if ($pep['ID_PEP'] == '7692'){
-                                echo ('10');
-                            }
-                            else if ($pep['ID_PEP'] == '7786'){
-                                echo('4');
-                            }
-                            else if ($pep['ID_PEP'] == '1'){
-                                echo('17');
-                            }
-                            else{
-                                    $user = new User(); 
-                                echo $user->bp; 
-                            }
-                                ?>
+                            $buro = new Buro();
+                            $userBuro = $buro->getIdBuroForUser($pep['ID_PEP']);
                             
-                                
+                            if (!empty($userBuro)) {
+                                $buroInfo = $buro->getBuroById($userBuro[0]['id_buro']);
+                                echo isset($buroInfo[0]['name']) ? HTML::chars($buroInfo[0]['name']) : 'Не указано';
+                            } else {
+                                echo 'Не указано';
+                            }
+                            ?>
                         </td>
                         <td>
                             <?php 

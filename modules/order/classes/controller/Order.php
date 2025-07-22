@@ -148,28 +148,15 @@ class Controller_Order extends Controller_Template
 	*режим работы (гость или архив) заданы в this и в сессии)
 	*/
 	public function action_index($filter = null)
-	{
-		//echo Debug::vars(Session::instance()->as_array());exit;
-		$po = Model::factory('Order'); // Создаем объект модели
-   		$mode = Session::instance()->get('mode'); // Получаем режим (guest_mode или archive_mode)
+{
+    $po = Model::factory('Order');
+    $mode = Session::instance()->get('mode');
+    $user = new User();
+    $id_pep = $user->id_pep;
+    $buro = new Buro();
+    $buro_list = $buro->getIdBuroForUser($id_pep);
 
-	// $session = Session::instance();
-	// $auth_user = $session->get('auth_user_crm');
-	// $id_pep = $auth_user['ID_PEP'];
-
-	$user = new User();
-	$id_pep = $user->id_pep;
-	$buro = new Buro();
-	$buro_list= $buro->get_id_buro_forUser($id_pep);
-	//echo Debug::vars('164', $buro_list);exit;
-
-	//echo Debug::vars($id_pep);exit;
-	//$id_org = $auth_user['ID_ORG'];
-
-    $list = $po->getListNowOrder($id_pep, $mode); // Получаем массив данных из модели
-
-	//echo Debug::vars($list);exit;
-
+    $list = $po->getListNowOrder($id_pep, $mode);
 
     $fl = $this->session->get('alert');
     $arrAlert = $this->session->get('arrAlert');
@@ -177,12 +164,12 @@ class Controller_Order extends Controller_Template
     $this->session->delete('arrAlert');
     
     $this->template->content = View::factory('order/list')
-        ->bind('people', $list) // Передаем массив в представление
+        ->bind('people', $list)
         ->bind('alert', $fl)
         ->bind('arrAlert', $arrAlert)
         ->bind('filter', $filter)
-        ->bind('pagination', $pagination); // Предполагается
-	}
+        ->bind('pagination', $pagination);
+}
 
 	/*
 	обработка POST-запросов
@@ -345,27 +332,27 @@ class Controller_Order extends Controller_Template
 					// перемещаю в архив
 					$guest->moveToArchive();
 					//делаю запись о ручном удалении карты
-/*
-не реализовано 7.07.2025
-*/
-$alert = __('guest.forceexitOK', array(
-    ':name' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->name) ?: $guest->name,
-    ':surname' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->surname) ?: $guest->surname,
-    ':patronymic' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->patronymic) ?: $guest->patronymic
-));
-Session::instance()->set('alert', $alert);
+					/*
+					не реализовано 7.07.2025
+					*/
+					$alert = __('guest.forceexitOK', array(
+						':name' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->name) ?: $guest->name,
+						':surname' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->surname) ?: $guest->surname,
+						':patronymic' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->patronymic) ?: $guest->patronymic
+					));
+					Session::instance()->set('alert', $alert);
 
-} else {
-    $alert = __('guest.forceexitErr', array(
-        ':name' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->name) ?: $guest->name,
-        ':surname' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->surname) ?: $guest->surname,
-        ':patronymic' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->patronymic) ?: $guest->patronymic
-    ));
-    Session::instance()->set('alert', $alert);
-}
+					} else {
+						$alert = __('guest.forceexitErr', array(
+							':name' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->name) ?: $guest->name,
+							':surname' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->surname) ?: $guest->surname,
+							':patronymic' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->patronymic) ?: $guest->patronymic
+						));
+						Session::instance()->set('alert', $alert);
+					}
 
-$this->redirect('order');
-break;
+					$this->redirect('order');
+				break;
 			
 			case 'reissue':// выдача карты уже известному гостю + обновление данных о госте
 				//проверка что карта не выдана какому-нибудь гостю
@@ -1084,22 +1071,141 @@ break;
 
 		public function action_settings() {
         $buro = new Buro();
-		$buros = $buro->getList();
+		$buros = $buro->getBuro();
+		//echo Debug::vars('1088', $buros);exit;
 		//echo Debug::vars('1068', $buro->getList());exit;
         
         $this->template->content = View::factory('order/settings')
             ->set('buros', $buros);
     }
 
-	public function action_buro_details(){
-		$id_buro = $this->request->param('id');
-		//echo Debug::vars('1077', $id_buro);exit;
-		$buro = new Buro();
-		$buros = $buro->getList($id_buro);
-		//echo Debug::vars('1080', $buros);exit;
-		$this->template->content = View::factory('order/buro_details')
-        ->set('buro', reset($buros));
-	}
-	
+	public function action_buro_details()
+{
+    $id_buro = $this->request->param('id');
+    
+    $buro = new Buro();
+    $users = $buro->getUsersByIdBuro($id_buro);  
+    $buroInfo = $buro->getBuroById($id_buro); 
+	$peoplee = new Guest2();  
 
+	$people = [];
+    $roles = [];
+    
+    foreach ($users as $user) {
+        $people1 = $peoplee->getUserById($user['id_pep']);
+        if ($people1) {
+            $people[$user['id_pep']] = $people1;
+        }
+        
+        $role = $buro->getRoleById($user['id_role']);
+        if ($role) {
+            $roles[$user['id_role']] = $role;
+        }
+    }
+    
+    $data = [
+        'buro' => isset($buroInfo[0]) ? $buroInfo[0] : null, 
+        'users' => $users,
+		'people' => $people,
+        'roles' => $roles
+    ];
+
+	//echo Debug::vars('1127', $data);exit;
+    
+    $this->template->content = View::factory('order/buro_details', $data);
 }
+
+public function action_delete_buro()
+{
+    $id_buro = $this->request->param('id');
+    
+    if (!$id_buro) {
+        Session::instance()->set('message', 'Не указан ID бюро для удаления');
+        Session::instance()->set('message_type', 'error');
+        $this->redirect('order/settings');
+    }
+    
+    $buro = new Buro();
+    $result = $buro->deleteBuro($id_buro);
+    
+    if ($result) {
+        Session::instance()->set('message', 'Бюро успешно удалено');
+        Session::instance()->set('message_type', 'success');
+    } else {
+        Session::instance()->set('message', 'Ошибка при удалении бюро');
+        Session::instance()->set('message_type', 'error');
+    }
+    
+    $this->redirect('order/settings');
+}
+
+   
+    public function action_UpdateBuro() {
+        $id_buro = $this->request->param('id');
+        $user = new Guest2();
+        $users = $user->getPeopleWithLogin();
+        $data = new Buro();
+        $buroList = $data->getBuro();
+        $roles = $data->getRoles();
+		//echo Debug::vars('1122', $users);exit;
+        
+        if ($this->request->method() === 'POST') {
+            $post = $this->request->post();
+            
+            try {
+                $buro = new Buro();
+                $buro->id_pep = Arr::get($post, 'user_id');
+                $buro->id_buro = Arr::get($post, 'buro_id');
+                $buro->id_role = Arr::get($post, 'role_id');
+                
+                $result = $buro->add();
+                
+                if ($result) {
+                    HTTP::redirect('/buro/update/' . $id_buro);
+                }
+            } catch (Exception $e) {
+                Log::instance()->add(Log::ERROR, 'Ошибка добавления записи: ' . $e->getMessage());
+                $this->template->error = 'Произошла ошибка при добавлении записи';
+            }
+        }
+        
+        $this->template->content = View::factory('order/UpdateBuro')
+            ->set('roles', $roles)
+            ->set('buroList', $buroList)
+            ->set('users', $users);
+    }
+
+	public function action_addBuro()
+{
+    $this->template->title = 'Добавление нового бюро';
+    $this->template->content = View::factory('order/addBuro');
+    
+    if ($this->request->method() === Request::POST) {
+        try {
+            $post = $this->request->post();
+            
+            // Валидация данных
+            if (empty($post['name'])) {
+                throw new Exception('Необходимо указать название бюро');
+            }
+            
+            // Создаем экземпляр модели
+            $buro = new Buro();
+            
+            // Добавляем новое бюро
+            $result = $buro->addBuro($post['name'], $post['information']);
+            
+            if ($result) {
+                Session::instance()->set('message', 'Бюро успешно добавлено');
+                Session::instance()->set('message_type', 'success');
+                $this->redirect('order/UpdateBuro');
+            }
+        } catch (Exception $e) {
+            Session::instance()->set('message', $e->getMessage());
+            Session::instance()->set('message_type', 'error');
+            $this->redirect('order/addBuro');
+        }
+    }
+}
+}
+	

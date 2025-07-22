@@ -2,120 +2,231 @@
 
 class Buro
 {
-    private static $roles = [
-        1 => 'admin',
-        2 => 'arendator',
-        3 => 'buro_manager'
-    ];
+    public $id;
+    public $id_pep;
+    public $id_buro;
+    public $id_role;
+    public $table_po = 'bu_conf';
+    public $table_po1 = 'bu_buro' ;
+    public $base_po = 'bucfg';
 
-    private static $buros = [
-        1 => [
-            'buro_name' => '4', 
-            'description' => 'улица Годовиков, 9с14'
-        ],
-        2 => [
-            'buro_name' => '10', 
-            'description' => 'улица Годовиков, 9с17'
-        ],
-        3 => [
-            'buro_name' => '17', 
-            'description' => 'Улица Годовиков, 9с10'
-        ]
-    ];
-
-    private static $user_mapping = [
-        '1' => [
-            'buros' => [2],
-            'id_role' => 1
-        ],
-        '7692' => [
-            'buros' => [1, 3],
-            'id_role' => [2]
-        ],
-        '1212' => [
-            'buros' => [1],
-            'id_role' => 2
-        ],
-    ];
-
-    public function get_id_buro_forUser($user_id){
-        $user_id = (string)$user_id;
-        $result = [];
-        if (isset(self::$user_mapping[$user_id]['buros'])) {
-            foreach (self::$user_mapping[$user_id]['buros'] as $buro_id){
-                if (isset(self::$buros[$buro_id])){
-                    $result[]=[
-                        'id_buro'=>$buro_id,
-                        //'buro_name'=>self::$buros[$buro_id]['buro_name'],
-                        //'description'=>self::$buros[$buro_id]['description']
-                    ];
-                }
-            }
+    public function __construct($id = null)
+    {
+        $this->id = null;
+        $this->id_pep = null;
+        $this->id_buro = null;
+        $this->id_role = null;
+        
+        if (!is_null($id)) {
+            $this->init($id);
         }
+    }
+
+    public function init($id = null)
+    {
+        if (!is_null($id)) {
+            $sql = 'SELECT buc.id, buc.id_pep, buc.id_buro, buc.id_role 
+                    FROM bu_conf buc
+                    WHERE buc.id = '.$id;
+            
+            $query = DB::query(Database::SELECT, $sql)
+                ->execute(Database::instance($this->base_po));
+            
+            foreach ($query as $key => $value) {
+                $this->id = Arr::get($value, 'id');
+                $this->id_pep = Arr::get($value, 'id_pep');
+                $this->id_buro = Arr::get($value, 'id_buro');
+                $this->id_role = Arr::get($value, 'id_role');
+            }
+        } else {
+            $this->id = null;
+            $this->id_pep = null;
+            $this->id_buro = null;
+            $this->id_role = null;
+        }
+    }
+
+    /** Добавление записи в таблицу bu_conf
+     * 
+     * @return array Результат выполнения запроса
+     */
+    public function add()
+    {
+        $query = DB::insert($this->table_po, array(
+            'id_pep', 'id_buro', 'id_role'
+        ))
+        ->values(array(
+            $this->id_pep,
+            $this->id_buro,
+            $this->id_role
+        ));
+        
+        $result = $query->execute($this->base_po);
+        Log::instance()->add(Log::NOTICE, 'Добавление записи в bu_conf '. Debug::vars($this, $result));
         return $result;
     }
 
-
-    public static function getRoleInfo($id_role)
+    /** Удаление записи из таблицы bu_conf
+     * 
+     * @return array Результат выполнения запроса
+     */
+    public function delete()
     {
-        return isset(self::$roles[$id_role]) ? [
-            'id_role' => $id_role,
-            'name' => self::$roles[$id_role]
-        ] : null;
+        $query = DB::delete($this->table_po)
+            ->where('id', '=', $this->id);
+            
+        $result = $query->execute($this->base_po);
+        Log::instance()->add(Log::NOTICE, 'Удаление записи из bu_conf '. Debug::vars($this, $result));
+        return $result;
     }
 
-    public static function getUserRole($user_id)
+    /** Обновление записи в таблице bu_conf
+     * 
+     * @return array Результат выполнения запроса
+     */
+    public function update()
     {
-        $user_id = (string)$user_id;
-        $role_id = isset(self::$user_mapping[$user_id]);
+        $query = DB::update($this->table_po)
+            ->set(array(
+                'id_pep' => $this->id_pep,
+                'id_buro' => $this->id_buro,
+                'id_role' => $this->id_role
+            ))
+            ->where('id', '=', $this->id);
+            
+        $result = $query->execute($this->base_po);
+        Log::instance()->add(Log::NOTICE, 'Обновление записи в bu_conf '. Debug::vars($this, $result));
+        return $result;
+    }
+
+    /** Получение всех записей из таблицы bu_conf
+     * 
+     * @return array Массив записей
+     */
+    public function get_all()
+    {
+        $sql = 'SELECT buc.id, buc.id_pep, buc.id_buro, buc.id_role 
+                FROM bu_conf buc';
+                
+        $query = DB::query(Database::SELECT, $sql)
+            ->execute(Database::instance($this->base_po));
+            
+        return $query->as_array();
+    }
+
+    public function getBuro(){
+        $sql = 'SELECT bub.id, bub.name, bub.information
+        FROM bu_buro bub';
+        $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance($this->base_po));
+        return $query->as_array();
+    }
+
+    public function getRoles(){
+        $sql = 'SELECT bur.id, bur.name FROM bu_roles bur';
+        $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance($this->base_po));
+        return $query->as_array();
+    }
+
+    public function getUsersByIdBuro($id_buro){
+        $sql = 'SELECT buc.id, buc.id_pep, buc.id_buro, buc.id_role 
+        FROM bu_conf buc
+        where buc.id_buro='.$id_buro;
+        $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance($this->base_po));
+        return $query->as_array();
+    }
+    public function getIdBuroForUser($id_pep){
+        $sql = 'SELECT buc.id, buc.id_pep, buc.id_buro, buc.id_role
+        FROM bu_conf buc
+        WHERE buc.id_pep='.$id_pep;
+        $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance($this->base_po));
+        return $query->as_array();
+    }
+    public function getBuroById($id_buro){
+        $sql = 'SELECT bub.id, bub.name, bub.information
+        FROM bu_buro bub
+        WHERE bub.id='.$id_buro;
+        $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance($this->base_po));
+        return $query->as_array();
+    }
+    public function getRoleById($id_role){
+        $sql = 'SELECT bur.id, bur.name 
+        FROM bu_roles bur
+        WHERE bur.id='.$id_role;
+        $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance($this->base_po));
+        return $query->as_array();
+    }
+    public function addBuro($name, $information)
+{
+    $query = DB::insert($this->table_po1, array(
+        'name', 
+        'information'
+    ))
+    ->values(array(
+        $name,
+        $information
+    ));
+    
+    $result = $query->execute($this->base_po);
+    Log::instance()->add(Log::NOTICE, 'Добавление нового бюро: '.Debug::vars($name, $information, $result));
+    return $result;
+}
+
+public function deleteBuro($id_buro)
+{
+    Database::instance($this->base_po)->begin();
+    
+    try {
+        DB::delete($this->table_po)
+            ->where('id_buro', '=', $id_buro)
+            ->execute($this->base_po);
         
-        return self::$user_mapping[$role_id];
+        $result = DB::delete($this->table_po1)
+            ->where('id', '=', $id_buro)
+            ->execute($this->base_po);
+        
+        Database::instance($this->base_po)->commit();
+        
+        Log::instance()->add(Log::NOTICE, 'Удалено бюро ID: '.$id_buro);
+        return $result;
+    } catch (Exception $e) {
+        Database::instance($this->base_po)->rollback();
+        Log::instance()->add(Log::ERROR, 'Ошибка удаления бюро: '.$e->getMessage());
+        return false;
     }
+}
 
-    public static function getUserInfo($user_id)
-    {
-        if (!isset(self::$user_mapping[$user_id])) {
-            return null;
-        }
+public static function getUserRole($id_pep)
+{
+    $sql = 'SELECT bur.name 
+            FROM bu_roles bur
+            JOIN bu_conf buc ON buc.id_role = bur.id
+            WHERE buc.id_pep = :id_pep
+            LIMIT 1';
+    
+    $query = DB::query(Database::SELECT, $sql)
+        ->param(':id_pep', $id_pep)
+        ->execute(Database::instance('bucfg'));
+    
+    return isset($query[0]['name']) ? $query[0]['name'] : null;
+}
 
-        $info = self::$user_mapping[$user_id];
-        $buros_info = [];
-
-        foreach ($info['buros'] as $buro_id) {
-            if (isset(self::$buros[$buro_id])) {
-                $buros_info[] = array_merge(
-                    ['id_buro' => $buro_id],
-                    self::$buros[$buro_id]
-                );
-            }
-        }
-
-        return [
-            'user_id' => $user_id,
-            'role' => self::getRoleInfo($info['id_role']),
-            'buros' => $buros_info
-        ];
-    }
-
-
-    public static function getUserRoleId($user_id)
-    {
-        return isset(self::$user_mapping[$user_id]) 
-            ? self::$user_mapping[$user_id]['id_role'] 
-            : null;
-    }
-    public static function getUserRoleName($user_id)
-    {
-        $id_role = self::getUserRoleId($user_id);
-        return isset(self::$roles[$id_role]) 
-            ? self::$roles[$id_role] 
-            : null;
-    }
-
-    public static function getUserBuros($user_id)
-    {
-        return isset(self::$user_mapping[$user_id]) 
-            ? self::$user_mapping[$user_id]['buros'] 
-            : [];
-    }
+public static function getUserRoleId($id_pep)
+{
+    $sql = 'SELECT buc.id_role 
+            FROM bu_conf buc
+            WHERE buc.id_pep = :id_pep
+            LIMIT 1';
+    
+    $query = DB::query(Database::SELECT, $sql)
+        ->param(':id_pep', $id_pep)
+        ->execute(Database::instance('bucfg'));
+    
+    return isset($query[0]['id_role']) ? (int)$query[0]['id_role'] : null;
+}
 }

@@ -12,7 +12,7 @@
 			'identity'=>array(Menu::MANCARD),
 			'fastreg'=>array(Menu::NONE),
 			'Reports'=>array(Menu::REPORT),
-			'passoffice'=>array(Menu::NONE),
+			'passoffice'=>array(),
 			'order'=>array(Menu::GUEST),
 			'monitor'=>array(Menu::MANCARD, Menu::MONITOR),
 			'acl'=>array(Menu::INTEGRATOR),

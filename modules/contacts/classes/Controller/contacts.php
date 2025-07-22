@@ -1254,8 +1254,13 @@ class Controller_Contacts extends Controller_Template
 	}
 	
 	public function action_addPeople() {
+		$id=$this->request->param('id');
+		//echo Debug::vars('1258', $id);exit;
        // Получение параметра id_org из запроса
         $force_org = Arr::get($_GET, 'id_org');
+
+		$contacts = Model::factory('Contact');
+		echo Debug::vars('1263', $contacts);//exit;
 
         // Инициализация переменных
         $people = new Guest2();
@@ -1305,5 +1310,78 @@ class Controller_Contacts extends Controller_Template
             ->bind('topbuttonbar', $topbuttonbar);
     }
 
+	public function action_setFlag()
+{
+    $id = $this->request->param('id');
+    $post = $this->request->post();
+    $contact = new Contact($id);
+
+    $flag_map = [
+        'reports5' => 15,
+        'reports6' => 14,
+        'card_manager' => 13,
+        'reports4' => 12,
+        'reports3' => 11,
+        'reports2' => 10,
+        'reports1' => 9,
+        'integrator' => 8,
+        'other' => 7,
+        'monitorEvents' => 6,
+        'reports' => 5,
+        'manageuser' => 4,
+        'managecard' => 3,
+        'konfigurator' => 2,
+        'monitor2' => 1,
+        'monitor1' => 0
+    ];
+
+    $contact_data = $contact->getUser($id);
+    $alert = Arr::get($_GET, 'alert', '');
+
+    if ($this->request->method() === HTTP_Request::POST) {
+        // Проверка id_pep
+        if (empty($id)) {
+            Log::instance()->add(Log::DEBUG, 'Ошибка: id_pep не передан в action_setFlag');
+            $alert = __('Ошибка: ID пользователя не указан');
+        } else {
+            $data = [
+                'surname' => Arr::get($post, 'surname', ''),
+                'name' => Arr::get($post, 'name', ''),
+                'patronymic' => Arr::get($post, 'patronymic', ''),
+                'login' => Arr::get($post, 'login', ''),
+                'password' => Arr::get($post, 'password', ''),
+                'organization' => Arr::get($post, 'organization', 0)
+            ];
+
+            $flags_data = [];
+            foreach ($flag_map as $flag => $position) {
+                $flags_data[$flag] = Arr::get($post, $flag, 0);
+            }
+
+            try {
+                if (!empty($data['surname']) || !empty($data['name']) || !empty($data['login']) || !empty($data['organization'])) {
+                    $contact->updateContactAdmin($id, $data);
+                }
+                // Обновляем флаги, если они переданы
+                if (!empty(array_filter($flags_data))) {
+                    $contact->UpdateFlagAdmin($id, $flags_data);
+                }
+                // Устанавливаем сообщение об успехе
+                $alert = __('Данные пользователя и флаги успешно обновлены');
+                // Редирект для обновления страницы
+                $this->redirect(URL::base() . 'contacts/setFlag/' . $id . '?alert=' . urlencode($alert));
+            } catch (Exception $e) {
+                Log::instance()->add(Log::DEBUG, 'Ошибка в action_setFlag: ' . $e->getMessage());
+                $alert = __('Ошибка при сохранении данных: ') . $e->getMessage();
+            }
+        }
+    }
+
+    $this->template->content = View::factory('contacts/AdminPanel')
+        ->bind('people', $contact_data)
+        ->bind('alert', $alert)
+        ->bind('organizations', $organization)
+        ->bind('flag_map', $flag_map);
+}
 	
 }

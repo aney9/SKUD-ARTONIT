@@ -51,6 +51,13 @@ return array
        		'dsn'        => 'sqlite:'.APPPATH .'\\Config\\acl_config.sqlite',
 			'persistent' => FALSE,
     )),
+	'bucfg' => array(
+		'type' => 'pdo',
+		'connection' => array(
+			'dsn' => 'sqlite:'.APPPATH . '\\Config\\buroconfig.sqlite',
+			'persistent' => FALSE,
+		)
+	)
 	
 
 

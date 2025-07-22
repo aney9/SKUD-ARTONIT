@@ -1,269 +1,275 @@
-<?php 
-$token = Profiler::start('test', 'profiler');
-//echo Debug::vars('13',$people );exit;
-//echo Debug::vars('14',$company );exit;
-//echo Debug::vars('15', Session::instance()->get('viewDeletePeopleOnly'));//exit;
-$token = Profiler::start('test', 'profiler');	
+<?php defined('SYSPATH') or die('No direct script access.'); ?>
+<?php if (isset($topbuttonbar)) echo $topbuttonbar; ?>
+<fieldset>
+    <legend><?php echo __('Данные пользователя'); ?></legend>
 
-if ($alert) { ?>
-<div class="alert_success">
-	<p>
-		<img class="mid_align" alt="success" src="images/icon_accept.png" />
-		<?php echo $alert; ?>
-	</p>
-</div>
-<?php }
+    <?php if (!empty($alert)): ?>
+        <div style="color: <?php echo ($alert === __('Пользователь успешно добавлен') || $alert === __('Пользователь успешно обновлен')) ? 'green' : 'red'; ?>;">
+            <?php echo htmlspecialchars($alert); ?>
+        </div>
+    <?php endif; ?>
 
-include Kohana::find_file('views','alert'); ?>
-<div class="onecolumn">
-	<div class="header">
-		<div id="search"<?php if (isset($hidesearch)) echo ' style="display: none;"'; ?>>
-			<form action="contacts/search" method="post">
-				<input type="text" class="search noshadow" title="<?php echo __('search'); ?>" name="q" id="q" value="<?php if (isset($filter)) echo $filter; ?>" />
-			</form>
-		</div>
-		
-		
-		<span><?php 
-			if (isset($filter)){
-				echo __('contacts.titleSearch', array(':filter'=>$filter));
-			} else {
-			echo __('contacts.title'); 
-			}
-			if (isset($company)) echo ' - ' . iconv('CP1251', 'UTF-8', $company['NAME']);
-			?></span>
-		<?php if (isset($company)) { ?>
-		<div class="switch">
-			<table cellpadding="0" cellspacing="0">
-			<tbody>
-				<tr>
-					<td>
-						<?php
-							if ($company['CANEDIT'] != 0)
-						 		echo HTML::anchor('companies/edit/' . $company['ID_ORG'], __('company.data'), array('class' => 'left_switch')); 
-						 	else 
-						 		echo HTML::anchor('companies/view/' . $company['ID_ORG'], __('company.data'), array('class' => 'left_switch'));
-						?>
-					</td>
-					<td>
-						<a href="javascript:" class="right_switch active"><?php echo __('company.contacts'); ?></a>
-					</td>
-				</tr>
-			</tbody>
-			</table>
-		</div>
-		<?php } ?>
-	</div>
-	<br class="clear"/>
-	<div class="content">
-		
-		<?php if (count($people) <= 0) { ?>
-		<div style="margin: 100px 0; text-align: center;">
-			<?php echo __('contacts.empty');
-				echo '<br><br>'.HTML::anchor('contacts/index/all','Показать все. Вывод всех записей может занять много времени.');
-			?><br /><br />
-			
-			
-		</div>
-		<?php } else { ?>
-		<?php
-		include Kohana::find_file('views', 'paginatoion_controller_template'); 
-		$sn=0;
-?>
-		<form id="form_data" name="form_data" action="" method="post">
-			<table class="data tablesorter-blue" width="100%" cellpadding="0" cellspacing="0" id="tablesorter" >
-				<thead>
-					<tr>
-						<!--
-						<th style="width:10px">
-							<input type="checkbox" id="check_all" name="check_all"/>
-						</th>
-						-->
-						<th class="filter-false sorter-false"><?php echo __('sn'); ?></th>
-						<?php if(Kohana::$config->load('config_newcrm')->get('contactListIdView', true)) echo '<th>'.__('contacts.id_pep').'</th>'?>
-						
-						<th class="filter-false"><?php echo __('contacts.count_identificator_rfid'); ?></th>
-						<th class="filter-false"><?php echo __('contacts.count_identificator_grz'); ?></th>
-											
-						<?php if(Kohana::$config->load('config_newcrm')->get('contactListTabNumView')) echo '<th>'.__('contacts.code').'</th>'?>
-						<th><?php echo __('contacts.name'); ?></th>
-						<th><?php echo __('contact.post'); ?></th>
-						
-						<th><?php echo __('contacts.company'); ?></th>
-						
-						<th class="filter-false sorter-false"><?php echo __('contacts.action'); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php foreach ($people as $pep) { 
-					
-					$peppep=new Contact(Arr::get($pep,'ID_PEP'));
-					$org = new Company($peppep->id_org);
-					?>
-					<tr>
-						<!--
-						<td>
-							<input type="checkbox" />
-						</td>
-						-->
-						<td><?php echo ++$sn; ?></td>
-						<?php if(Kohana::$config->load('config_newcrm')->get('contactListIdView', true)) echo '<td>'.$peppep->id_pep.'</td>'?>
-						
-						<td><?php //вывод символов идентификаторов RFID
-								
-								if(count($peppep->count_identificator)) {
-									foreach($peppep->count_identificator as $ley=>$value)
-									{
-										
-											//echo Debug::vars('111', $value );
-										if(Arr::get($value, 'ID_CARDTYPE') == constants::idRfid) { //это rfid
-											$imageCount=Arr::get($value, 'COUNT');
-											if ($imageCount>constants::maxCountImageForId) $imageCount=constants::maxCountImageForId;
-											for($i=0; $i<$imageCount; $i++)
-											{
-												echo HTML::image('/images/icon_card.png', array('width'=>'16'));
-												
-											}
-											if(Arr::get($value, 'COUNT')>constants::maxCountImageForId) echo '...';
-										}											
-									}
-								
-								; }?>
-						</td>
-						
-						<td><?php //вывод символов идентификаторов ГРЗ
-								
-								if(count($peppep->count_identificator)) {
-									foreach($peppep->count_identificator as $ley=>$value)
-									{
-										
-											//echo Debug::vars('111', $value );
-										if(Arr::get($value, 'ID_CARDTYPE') == constants::idGrz) { //это грз
-											$imageCount=Arr::get($value, 'COUNT');
-											if ($imageCount>constants::maxCountImageForId) $imageCount=constants::maxCountImageForId;
-											for($i=0; $i<$imageCount; $i++)
-											{
-												echo HTML::image('/images/icon_grz.png', array('height'=>'16'));
-												
-											}
-											if(Arr::get($value, 'COUNT')>constants::maxCountImageForId) echo '...';
-										}											
-									}
-								
-								; }?>
-						</td>
-						
-						<td><?php 
-						
-						if (Auth::instance()->logged_in('admin') && $peppep->id_pep <>1)
-						    echo HTML::anchor('contacts/edit/' . $peppep->id_pep, iconv('CP1251', 'UTF-8', $peppep->surname. ' '.$peppep->name . ' ' . $peppep->patronymic));
-							else
-							    echo iconv('CP1251', 'UTF-8', $peppep->surname. ' '.$peppep->name . ' ' . $peppep->patronymic);
-							    if($org->flag & 1) echo HTML::image('/images/icon_guest2.png', array('width'=>'16'));
-						
-						?></td>
-						<td><?php echo iconv('CP1251', 'UTF-8', $peppep->post);?></td>
+    <form method="post" action="<?php echo URL::base() . 'contacts/update/' . Arr::get($people, 'id_pep', 0); ?>">
+        <div>
+            <label for="surname"><?php echo __('Фамилия'); ?></label>
+            <br />
+            <input type="text" size="50" name="surname" id="surname" value="<?php echo htmlspecialchars(Arr::get($people, 'surname', '')); ?>" />
+            <br />
+            <span class="error" id="error_surname" style="color: red; display: none;">
+                <?php echo __('Поле "Фамилия" обязательно для заполнения'); ?>
+            </span>
+        </div>
+        <br />
 
-						<td><?php 
-						
-						if (Auth::instance()->logged_in('admin') && $peppep->id_pep <>1)
-						    echo HTML::anchor('companies/edit/' . $peppep->id_org, iconv('CP1251', 'UTF-8', $org->name)); 
-							else 
-							    echo iconv('CP1251', 'UTF-8',  $org->name);
-						?></td>
-					
-						<?php
-						//Определяюсь с правами текущего пользователя
-						$user=new User();
-						//набор параметров, определяющий поведение кнопок для разных ролей
-						if(class_exists('Acl')){
-							$acl=new Acl(true);
-							if($acl->is_allowed($user->role,'organization', 'read')){
-								$dis1='';
-								$dis2='class="disabled"';
-								$dis2_lighten='lighten';
-								$dis3='';
-							};
-							if($acl->is_allowed($user->role,'organization', 'create')){
-								$dis1='';
-								$dis2='class="disabled"';
-								$dis2_lighten='lighten';
-								$dis3='';
-							};
-							if($acl->is_allowed($user->role,'organization', 'update')){
-								$dis1='';
-								$dis2='';
-								$dis2_lighten='';
-								$dis3='';
-							};
-							if($acl->is_allowed($user->role,'organization', 'delete')){
-								$dis1='';
-								$dis2='';
-								$dis2_lighten='';
-								$dis3='';
-							};
-						} else {
-							 $dis1='';
-							 $dis2='';
-							 $dis2_lighten='';
-							$dis3='';
-								
-						}
-						?>
-						<td>
-							<?php 
-							    
-	//редактировать						    
-							 echo HTML::anchor('contacts/edit/'.$peppep->id_pep, HTML::image('images/icon_edit.png', array('title' => __('tip.edit'), 'class' => 'help', 'alt'=>'edit'.$dis1))
-							    
-							     );
+        <div>
+            <table align="left">
+                <tr>
+                    <td>
+                        <label for="name"><?php echo __('Имя'); ?></label>
+                        <br />
+                        <input type="text" size="50" name="name" id="name" value="<?php echo htmlspecialchars(Arr::get($people, 'name', '')); ?>" style="width: 150px" />
+                        <br />
+                        <span class="error" id="error_name" style="color: red; display: none;">
+                            <?php echo __('Поле "Имя" обязательно для заполнения'); ?>
+                        </span>
+                    </td>
+                    <td style="padding-left: 15px">
+                        <label for="patronymic"><?php echo __('Отчество'); ?></label>
+                        <br />
+                        <input type="text" size="50" name="patronymic" id="patronymic" value="<?php echo htmlspecialchars(Arr::get($people, 'patronymic', '')); ?>" style="width: 150px" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <br style="clear: both;" />
 
-							 ?>
-							
-							<?php if ($peppep->is_active == 1) {
+        <div>
+            <table align="left">
+                <tr>
+                    <td>
+                        <label for="username"><?php echo __('Логин'); ?></label>
+                        <br />
+                        <input type="text" size="50" name="username" id="username" value="<?php echo htmlspecialchars(Arr::get($people, 'username', '')); ?>" style="width: 150px" />
+                        <br />
+                        <span class="error" id="error_username" style="color: red; display: none;">
+                            <?php echo __('Поле "Логин" обязательно для заполнения'); ?>
+                        </span>
+                    </td>
+                    <td style="padding-left: 15px">
+                        <label for="password"><?php echo __('Пароль'); ?></label>
+                        <br />
+                        <input type="password" size="50" name="password" id="password" style="width: 150px" />
+                        <br />
+                        <span class="error" id="error_password" style="color: red; display: none;">
+                            <?php echo __('Поле "Пароль" обязательно для заполнения'); ?>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <br style="clear: both;" />
 
-									switch (ConfigType::howDeletePeople()) {
-										case 0://делать неактивным. Вывожу надпись что сотрудник будет Уволен
-										?>
-										<a href="javascript:" <?php echo $dis2 ?> onclick="if (confirm('<?php echo __('contacts.confirmSetNotActive'); ?>')) location.href='<?php echo URL::base() . 'contacts/fired/' . $pep['ID_PEP']; ?>';">
-										 <?php echo HTML::image('images/icon_delete.png', array('title' => __('tip.fired'), 'class' => 'help '.$dis2_lighten)); ?>
-										</a>
-										<?php 
-										
-										break;
-										case 1:// удалять сотрудника. Вывожу надпись, что сотрудник будет удален
-											?>
-											<a href="javascript:" <?php echo $dis2 ?> onclick="if (confirm('<?php echo __('contacts.confirmdelete'); ?>')) location.href='<?php echo URL::base() . 'contacts/fired/' . $pep['ID_PEP']; ?>';">
-											 <?php echo HTML::image('images/icon_delete.png', array('title' => __('tip.delete'), 'class' => 'help '.$dis2_lighten)); ?>
-											</a>
-											<?php 
-										
-										break;
-										
-									}
-//уволить							
+        <div>
+            <label for="organization"><?php echo __('Организация'); ?></label>
+            <br />
+            <select name="organization" id="organization" style="width: 315px; color: black; background: white;">
+                <option value="">-- Выберите организацию --</option>
+                <?php if (!empty($organizations)): ?>
+                    <?php foreach ($organizations as $org): ?>
+                        <option value="<?php echo htmlspecialchars($org['id']); ?>"
+                            <?php if (isset($force_org) && $force_org == $org['id'] || Arr::get($people, 'id_org') == $org['id']) echo 'selected="selected"'; ?>>
+                            <?php echo htmlspecialchars($org['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="" disabled>Нет доступных организаций</option>
+                <?php endif; ?>
+            </select>
+            <br />
+            <span class="error" id="error_organization" style="color: red; display: none;">
+                <?php echo __('Поле "Организация" обязательно для заполнения'); ?>
+            </span>
+        </div>
+        <br />
 
-							?>
-										
-								<?php } else {?>
-									<a href="javascript:" <?php echo $dis2 ?> onclick="if (confirm('<?php echo __('contacts.restore'); ?>')) location.href='<?php echo URL::base() . 'contacts/restore/' . Arr::get($pep,'ID_PEP'); ?>';">
-										<?php echo HTML::image('images/restore_16.png', array('title' => __('tip.restore'), 'class' => 'help '.$dis2_lighten)); ?>
-								</a>
-								
-								
-								<?php }
-							?>
-						</td>
-					</tr>
-					<?php } ?>
-				</tbody>
-			</table>
-			<div id="chart_wrapper" class="chart_wrapper"></div>
-		<!-- End bar chart table-->
-		</form>
-		<?php }
-Profiler::stop($token);
-//echo Debug::vars('207', Profiler::stats(array($token)));
-		?>
-	</div>
-</div>
+        <div>
+            <label for="post"><?php echo __('Должность'); ?></label>
+            <br />
+            <input type="text" size="50" name="post" id="post" value="<?php echo htmlspecialchars(Arr::get($people, 'post', '')); ?>" />
+            <br />
+        </div>
+        <br />
+
+        <div>
+            <label for짝
+
+System: Кажется, ваш код представления обрывается на середине. Я предполагаю, что вы хотели продолжить представление `contacts/addPeople` с полем `note` и кнопкой отправки формы. Я завершу представление, добавив недостающие элементы, и предоставлю полный код с учетом ваших требований. Также я реализую метод `action_update` для обработки отправки формы и обновления данных пользователя, используя метод `updateContact` из класса `Contact`. Все будет на русском, как вы просили, с учетом кодировки CP1251 для базы данных и UTF-8 для отображения.
+
+---
+
+### Завершение решения
+
+#### 1. Полное представление `contacts/addPeople`
+Вот завершенный код представления `contacts/addPeople`, включающий все необходимые поля и кнопку отправки:
+
+```php
+<?php defined('SYSPATH') or die('No direct script access.'); ?>
+<?php if (isset($topbuttonbar)) echo $topbuttonbar; ?>
+<fieldset>
+    <legend><?php echo __('Данные пользователя'); ?></legend>
+
+    <?php if (!empty($alert)): ?>
+        <div style="color: <?php echo ($alert === __('Пользователь успешно добавлен') || $alert === __('Пользователь успешно обновлен')) ? 'green' : 'red'; ?>;">
+            <?php echo htmlspecialchars($alert); ?>
+        </div>
+    <?php endif; ?>
+
+    <form method="post" action="<?php echo URL::base() . 'contacts/update/' . Arr::get($people, 'id_pep', 0); ?>">
+        <div>
+            <label for="surname"><?php echo __('Фамилия'); ?></label>
+            <br />
+            <input type="text" size="50" name="surname" id="surname" value="<?php echo htmlspecialchars(Arr::get($people, 'surname', '')); ?>" />
+            <br />
+            <span class="error" id="error_surname" style="color: red; display: none;">
+                <?php echo __('Поле "Фамилия" обязательно для заполнения'); ?>
+            </span>
+        </div>
+        <br />
+
+        <div>
+            <table align="left">
+                <tr>
+                    <td>
+                        <label for="name"><?php echo __('Имя'); ?></label>
+                        <br />
+                        <input type="text" size="50" name="name" id="name" value="<?php echo htmlspecialchars(Arr::get($people, 'name', '')); ?>" style="width: 150px" />
+                        <br />
+                        <span class="error" id="error_name" style="color: red; display: none;">
+                            <?php echo __('Поле "Имя" обязательно для заполнения'); ?>
+                        </span>
+                    </td>
+                    <td style="padding-left: 15px">
+                        <label for="patronymic"><?php echo __('Отчество'); ?></label>
+                        <br />
+                        <input type="text" size="50" name="patronymic" id="patronymic" value="<?php echo htmlspecialchars(Arr::get($people, 'patronymic', '')); ?>" style="width: 150px" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <br style="clear: both;" />
+
+        <div>
+            <table align="left">
+                <tr>
+                    <td>
+                        <label for="username"><?php echo __('Логин'); ?></label>
+                        <br />
+                        <input type="text" size="50" name="username" id="username" value="<?php echo htmlspecialchars(Arr::get($people, 'username', '')); ?>" style="width: 150px" />
+                        <br />
+                        <span class="error" id="error_username" style="color: red; display: none;">
+                            <?php echo __('Поле "Логин" обязательно для заполнения'); ?>
+                        </span>
+                    </td>
+                    <td style="padding-left: 15px">
+                        <label for="password"><?php echo __('Пароль'); ?></label>
+                        <br />
+                        <input type="password" size="50" name="password" id="password" style="width: 150px" />
+                        <br />
+                        <span class="error" id="error_password" style="color: red; display: none;">
+                            <?php echo __('Поле "Пароль" обязательно для заполнения при создании'); ?>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <br style="clear: both;" />
+
+        <div>
+            <label for="organization"><?php echo __('Организация'); ?></label>
+            <br />
+            <select name="organization" id="organization" style="width: 315px; color: black; background: white;">
+                <option value="">-- Выберите организацию --</option>
+                <?php if (!empty($organizations)): ?>
+                    <?php foreach ($organizations as $org): ?>
+                        <option value="<?php echo htmlspecialchars($org['id']); ?>"
+                            <?php if (isset($force_org) && $force_org == $org['id'] || Arr::get($people, 'id_org') == $org['id']) echo 'selected="selected"'; ?>>
+                            <?php echo htmlspecialchars($org['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="" disabled>Нет доступных организаций</option>
+                <?php endif; ?>
+            </select>
+            <br />
+            <span class="error" id="error_organization" style="color: red; display: none;">
+                <?php echo __('Поле "Организация" обязательно для заполнения'); ?>
+            </span>
+        </div>
+        <br />
+
+        <div>
+            <label for="post"><?php echo __('Должность'); ?></label>
+            <br />
+            <input type="text" size="50" name="post" id="post" value="<?php echo htmlspecialchars(Arr::get($people, 'post', '')); ?>" />
+            <br />
+        </div>
+        <br />
+
+        <div>
+            <label for="note"><?php echo __('Примечание'); ?></label>
+            <br />
+            <textarea name="note" id="note" rows="4" cols="50"><?php echo htmlspecialchars(Arr::get($people, 'note', '')); ?></textarea>
+            <br />
+        </div>
+        <br />
+
+        <div style="margin-top: 15px;">
+            <input type="submit" value="<?php echo Arr::get($people, 'id_pep', 0) ? __('Сохранить изменения') : __('Добавить пользователя'); ?>" />
+        </div>
+    </form>
+</fieldset>
+
+<style>
+    select, option {
+        color: black !important;
+        background: white !important;
+    }
+</style>
+
+<script>
+    // Клиентская валидация
+    document.querySelector('form').addEventListener('submit', function(e) {
+        var valid = true;
+        var fields = [
+            { id: 'surname', errorId: 'error_surname' },
+            { id: 'name', errorId: 'error_name' },
+            { id: 'username', errorId: 'error_username' },
+            { id: 'organization', errorId: 'error_organization' }
+        ];
+
+        fields.forEach(function(field) {
+            var input = document.getElementById(field.id);
+            var error = document.getElementById(field.errorId);
+            if (!input.value.trim()) {
+                error.style.display = 'block';
+                valid = false;
+            } else {
+                error.style.display = 'none';
+            }
+        });
+
+        // Пароль обязателен только при создании нового пользователя
+        var password = document.getElementById('password');
+        var errorPassword = document.getElementById('error_password');
+        if (!<?php echo Arr::get($people, 'id_pep', 0); ?> && !password.value.trim()) {
+            errorPassword.style.display = 'block';
+            valid = false;
+        } else {
+            errorPassword.style.display = 'none';
+        }
+
+        if (!valid) {
+            e.preventDefault();
+        }
+    });
+</script>

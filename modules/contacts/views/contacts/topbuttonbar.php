@@ -47,9 +47,9 @@ $battArray=array(
 				'disabled'=>'disabled',	
 				'tittle'=>'Журнал событий',			
 	),
-	'addPeople'=>array(
-		'anchor'=>'contacts/addPeople/' . $id_pep=0,
-		'messOnbatton'=>__('Добавить человека'),
+	'setFlag'=>array(
+		'anchor'=>'contacts/setFlag/' . $id_pep,
+		'messOnbatton'=>__('Панель администратора'),
 		'class' => 'middle_switch',
 		'disabled'=> 'disabled',
 		'tittle'=>'Добавить человека',
@@ -83,8 +83,14 @@ $battArray=array(
 					
 						if($key==$_is_active) $isActive =' active' ;
 						//echo Debug::vars('76', $key, $_is_active, $isActive);exit;
-				
-								echo HTML::anchor(Arr::get($value,'anchor'), Arr::get($value,'messOnbatton'), array('class' => Arr::get($value,'class').$isActive, 'disabled'=>Arr::get($value,'disabled'), 'title'=>Arr::get($value,'tittle'))); 
+						$user = new User();
+						if ($key == 'setFlag' && ($user->flag & MENU::CONFIG)){
+							echo HTML::anchor(Arr::get($value,'anchor'), Arr::get($value,'messOnbatton'), array('class' => Arr::get($value,'class').$isActive, 'disabled'=>Arr::get($value,'disabled'), 'title'=>Arr::get($value,'tittle'))); 
+						}else{
+							echo HTML::anchor(Arr::get($value,'anchor'), Arr::get($value,'messOnbatton'), array('class' => Arr::get($value,'class').$isActive, 'disabled'=>Arr::get($value,'disabled'), 'title'=>Arr::get($value,'tittle'))); 
+						}
+						//echo Debug::vars('87',Menu::MANCARD);exit;
+								
 							echo '</td>';
 					
 						

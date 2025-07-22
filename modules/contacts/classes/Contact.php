@@ -660,9 +660,151 @@ class Contact
 		}	
 		
 	}
-	
 
-	
+	public function getUser($id_pep)
+{
+    try {
+        $sql_people = 'SELECT p.surname, p.name, p.patronymic, p.id_org, p.pswd, p.login, p.flag,
+                              o.name as organization_name
+                       FROM people p
+                       LEFT JOIN organization o ON p.id_org = o.id_org
+                       WHERE p.id_pep = :id_pep AND p.id_db = 1';
+
+					   //echo Debug::vars('673', $sql_people);exit;
+        
+        $query_people = DB::query(Database::SELECT, $sql_people)
+            ->param(':id_pep', $id_pep)
+            ->execute(Database::instance('fb'))
+            ->current();
+
+		//echo Debug::vars('680', $query_people);exit;
+
+        $flag_value = Arr::get($query_people, 'FLAG', 0);
+        $binary_flags = str_pad(decbin($flag_value), 16, '0', STR_PAD_LEFT);
+        
+        $flags = [
+            'monitor1' => $binary_flags[15] == '1' ? 1 : 0,
+            'monitor2' => $binary_flags[14] == '1' ? 1 : 0,
+            'konfigurator' => $binary_flags[13] == '1' ? 1 : 0,
+            'managecard' => $binary_flags[12] == '1' ? 1 : 0,
+            'manageuser' => $binary_flags[11] == '1' ? 1 : 0,
+            'reports' => $binary_flags[10] == '1' ? 1 : 0,
+            'monitorEvents' => $binary_flags[9] == '1' ? 1 : 0,
+            'other' => $binary_flags[8] == '1' ? 1 : 0,
+            'integrator' => $binary_flags[7] == '1' ? 1 : 0,
+            'reports1' => $binary_flags[6] == '1' ? 1 : 0,
+            'reports2' => $binary_flags[5] == '1' ? 1 : 0,
+            'reports3' => $binary_flags[4] == '1' ? 1 : 0,
+            'reports4' => $binary_flags[3] == '1' ? 1 : 0,
+            'card_manager' => $binary_flags[2] == '1' ? 1 : 0,
+            'reports6' => $binary_flags[1] == '1' ? 1 : 0,
+            'reports5' => $binary_flags[0] == '1' ? 1 : 0,
+        ];
+
+        $contact_data = [
+            'id_pep' => $id_pep,
+            'surname' => iconv('CP1251', 'UTF-8', Arr::get($query_people, 'SURNAME', '')),
+            'name' => iconv('CP1251', 'UTF-8', Arr::get($query_people, 'NAME', '')),
+            'patronymic' => iconv('CP1251', 'UTF-8', Arr::get($query_people, 'PATRONYMIC', '')),
+            'login' => iconv('CP1251', 'UTF-8', Arr::get($query_people, 'LOGIN', '')),
+            'pswd' => Arr::get($query_people, 'PSWD', ''),
+            'id_org' => Arr::get($query_people, 'ID_ORG', 0),
+            'org_name' => iconv('CP1251', 'UTF-8', Arr::get($query_people, 'ORGANIZATION_NAME', ''))
+        ];
+
+		
+
+        $this->actionResult = 0;
+        $contact_data = array_merge($contact_data, $flags);
+        //echo Debug::vars('715', $contact_data);exit;
+		return $contact_data;
+
+    } catch (Exception $e) {
+        Log::instance()->add(Log::DEBUG, 'Ошибка получения данных пользователя: ' . $e->getMessage());
+        $this->actionResult = 3;
+        $this->actionDesc = __('Ошибка получения данных пользователя');
+        return [];
+    }
+}
+
+public function updateContactAdmin($id_pep, $data)
+{
+    try {
+        $surname = iconv('UTF-8', 'CP1251', trim($data['surname']));
+        $name = iconv('UTF-8', 'CP1251', trim($data['name']));
+        $patronymic = iconv('UTF-8', 'CP1251', trim($data['patronymic']));
+        $login = iconv('UTF-8', 'CP1251', trim($data['login']));
+        $password = trim($data['password']);
+        $id_org = (int)$data['organization'];
+
+
+        $sql = 'UPDATE people 
+                       SET login = :login, 
+                           pswd = :password, 
+                           id_org = :id_org
+                       WHERE id_pep = :id_pep AND id_db = 1';
+
+        $result = DB::query(Database::UPDATE, $sql)
+            ->param(':id_pep', $id_pep)
+            ->param(':surname', $surname)
+            ->param(':name', $name)
+            ->param(':patronymic', $patronymic)
+            ->param(':login', $login)
+            ->param(':password', $password)
+            ->param(':id_org', $id_org)
+            //->param(':flag', $flag_value)
+            ->execute(Database::instance('fb'));
+
+
+    } catch (Exception $e) {
+        //Log::instance()->add(Log::DEBUG, 'Ошибка обновления данных пользователя: ' . $e->getMessage());
+        $this->actionResult = 3;
+        return false;
+    }
+}
+
+
+public function UpdateFlagAdmin($id_pep, $data)
+{
+    try {
+        $flag_map = [
+            'monitor1' => 0,
+            'monitor2' => 1,
+            'konfigurator' => 2,
+            'managecard' => 3,
+            'manageuser' => 4,
+            'reports' => 5,
+            'monitorEvents' => 6,
+            'other' => 7,
+            'integrator' => 8,
+            'reports1' => 9,
+            'reports2' => 10,
+            'reports3' => 11,
+            'reports4' => 12,
+            'card_manager' => 13,
+            'reports6' => 14,
+            'reports5' => 15
+        ];
+
+        $flag_value = 0;
+        foreach ($flag_map as $flag => $position) {
+            if (!empty(Arr::get($data, $flag, 0))) {
+                $flag_value |= (1 << $position);
+            }
+        }
+
+        $sql_update = 'UPDATE people SET flag = :flag WHERE id_pep = :id_pep AND id_db = 1';
+        $result = DB::query(Database::UPDATE, $sql_update)
+            ->param(':id_pep', $id_pep)
+            ->param(':flag', $flag_value)
+            ->execute(Database::instance('fb'));
+    } catch (Exception $e) {
+        Log::instance()->add(Log::DEBUG, 'Ошибка обновления флагов: ' . $e->getMessage());
+        $this->actionResult = 3;
+        $this->actionDesc = __('Ошибка обновления флагов');
+        return false;
+    }
+}
 	
 	
 	
