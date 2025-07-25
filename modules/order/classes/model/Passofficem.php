@@ -148,11 +148,11 @@ class Model_Passofficem extends Model_Contact
 		default:// режиме НЕ архив
              				
 
-			$sql = 'SELECT gu.id_guestorder, g.id_guest, o.id_org FROM guestorder gu ' .
-				'JOIN guest g ON gu.id_guest = g.id_guest ' .
-				'JOIN organization o ON gu.id_org = o.id_org ' .
-				'WHERE g.id_guest IN ('.$this->idGuest.') ' .
-				'AND o.id_org IN ('.$this->idOrgGuest.')';
+			//$sql = 'SELECT gu.id_guestorder, g.id_guest, o.id_org FROM guestorder gu ' .
+				//'JOIN guest g ON gu.id_guest = g.id_guest ' .
+				//'JOIN organization o ON gu.id_org = o.id_org ' .
+				//'WHERE g.id_guest IN ('.$this->idGuest.') ' .
+				//'AND o.id_org IN ('.$this->idOrgGuest.')';
 						
 
             // $sql = 'SELECT p.id_pep, o.id_org from people p ' .
@@ -168,10 +168,10 @@ class Model_Passofficem extends Model_Contact
 	}
 	
 	   //echo Debug::vars('401', $sql); //exit;
-	   $query = DB::query(Database::SELECT, iconv('UTF-8', 'CP1251',$sql))
-		      	->execute(Database::instance('fb'));
+	   //$query = DB::query(Database::SELECT, iconv('UTF-8', 'CP1251',$sql))
+		      	//->execute(Database::instance('fb'));
 		
-		  return $query->as_array();
+		  //return $query->as_array();
 	}
 	
 	

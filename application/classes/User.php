@@ -11,7 +11,7 @@ class User
     public $id_devgroup;
     public $login;
     public $role;       
-    //public $buro_role;  // Роль из системы Buro (добавленное свойство)
+    public $id_buro;  
     public $flag;
     public $bp;
     public $id_role;
@@ -34,6 +34,8 @@ class User
         
         //$this->buro_role = Buro::getUserRole($this->id_pep);
         $this->id_role = Buro::getUserRoleId($this->id_pep);
+
+        $this->id_buro = Buro::getUserBuroId($this->id_pep);
         
         $this->bp = $this->getBuroNameForUser();
     }

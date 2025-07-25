@@ -134,17 +134,23 @@ $user = new User();
                     }
                     break;
                 case 'buro':
+                
                     if ($user->id_role == 1) {
                          echo Form::hidden('todo', 'reissue'); 
                     echo Form::submit('reissue', __('Обновить233'), [
                         'onclick' => "this.form.elements.todo.value='reissue'"
+                        
                     ]);
                     
+                    echo Form::submit('consent', __('Согласие'), array(
+                            'onclick' => "this.form.elements.todo.value='consent'"
+                        ));
                     if (!empty($cardlist[0]['ID_CARD'])) {
                         echo Form::submit('forceexit', __('Забрать карту!'), [
                             'onclick' => "this.form.elements.todo.value='forceexit'"
                         ]);
                     }
+                    
                     } else {
                         echo Form::hidden('todo', 'savenew');
                         echo Form::submit('savenew', __('Добавить гостя230'));

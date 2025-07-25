@@ -147,30 +147,54 @@ class Controller_Order extends Controller_Template
 	*Организация вывода списка гостей или архива на экран. Вариант вывода определяется mode
 	*режим работы (гость или архив) заданы в this и в сессии)
 	*/
-	public function action_index($filter = null)
-{
-    $po = Model::factory('Order');
-    $mode = Session::instance()->get('mode');
-    $user = new User();
-    $id_pep = $user->id_pep;
-    $buro = new Buro();
-    $buro_list = $buro->getIdBuroForUser($id_pep);
+public function action_index($filter = null)
+    {
+        $po = Model::factory('Order');
+        $mode = Session::instance()->get('mode');
+        $user = new User();
+        $id_pep = $user->id_pep;
+        $user_role = $user->id_role;
+        $id_buro = $user->id_buro;
 
-    $list = $po->getListNowOrder($id_pep, $mode);
+        $buro = new Buro();
+        $buro_filter = '';
 
-    $fl = $this->session->get('alert');
-    $arrAlert = $this->session->get('arrAlert');
-    $this->session->delete('alert');
-    $this->session->delete('arrAlert');
-    
-    $this->template->content = View::factory('order/list')
-        ->bind('people', $list)
-        ->bind('alert', $fl)
-        ->bind('arrAlert', $arrAlert)
-        ->bind('filter', $filter)
-        ->bind('pagination', $pagination);
-}
+        if ($user_role == 2 && !is_null($id_buro)) {
+            $users = $buro->getUsersByBuroId($id_buro);
+            if (!in_array($id_pep, $users)) {
+                $users[] = $id_pep;
+            }
+            Log::instance()->add(Log::DEBUG, 'Users for id_buro ' . $id_buro . ' before filter: ' . implode(',', $users));
+            if (!empty($users)) {
+                $users = array_map('intval', $users); 
+                $buro_filter = '(p."ID_PEP" IN (' . implode(',', $users) . ') OR g."ID_PEP" IN (' . implode(',', $users) . '))';
+            } else {
+                $buro_filter = '1=0'; 
+            }
+            Log::instance()->add(Log::DEBUG, 'Buro filter for id_buro ' . $id_buro . ': ' . $buro_filter);
+        }
 
+        $list = $po->getListNowOrder($id_pep, $mode, $user_role, $buro_filter);
+
+        Log::instance()->add(Log::DEBUG, 'User role: ' . (!is_null($user_role) ? $user_role : 'null'));
+        Log::instance()->add(Log::DEBUG, 'Buro ID: ' . (!is_null($id_buro) ? $id_buro : 'null'));
+        Log::instance()->add(Log::DEBUG, 'Records found: ' . count($list));
+        if (!empty($list)) {
+            Log::instance()->add(Log::DEBUG, 'Sample records: ' . print_r(array_slice($list, 0, 2), true));
+        }
+
+        $fl = $this->session->get('alert');
+        $arrAlert = $this->session->get('arrAlert');
+        $this->session->delete('alert');
+        $this->session->delete('arrAlert');
+
+        $this->template->content = View::factory('order/list')
+            ->bind('people', $list)
+            ->bind('alert', $fl)
+            ->bind('arrAlert', $arrAlert)
+            ->bind('filter', $filter)
+            ->bind('pagination', $pagination);
+    }
 	/*
 	обработка POST-запросов
 	11.11.2023 сохранение информации по гостю.
@@ -353,6 +377,10 @@ class Controller_Order extends Controller_Template
 
 					$this->redirect('order');
 				break;
+
+			case 'consent':
+    			$this->redirect('order/PersonalData/'.$id);
+    			break;
 			
 			case 'reissue':// выдача карты уже известному гостю + обновление данных о госте
 				//проверка что карта не выдана какому-нибудь гостю
@@ -1069,15 +1097,35 @@ class Controller_Order extends Controller_Template
 		
 		}
 
-		public function action_settings() {
-        $buro = new Buro();
-		$buros = $buro->getBuro();
-		//echo Debug::vars('1088', $buros);exit;
-		//echo Debug::vars('1068', $buro->getList());exit;
+public function action_settings() {
+    $buro = new Buro();
+    $buros = $buro->getBuro();
+    
+    $guest = new Guest2();
+    $people = $guest->getPeopleWithLogin();
+    
+    $peopleWithBuro = [];
+    foreach ($people as $person) {
+        $userBuros = $buro->getIdBuroForUser($person['ID_PEP']);
+        $buroRoles = []; // Здесь будет ассоциативный массив [id_buro => role_name]
         
-        $this->template->content = View::factory('order/settings')
-            ->set('buros', $buros);
+        foreach ($userBuros as $userBuro) {
+            $role = $buro->getRoleById($userBuro['id_role']);
+            $buroRoles[$userBuro['id_buro']] = [
+                'role_name' => isset($role[0]['name']) ? $role[0]['name'] : '-'
+            ];
+        }
+        
+        $person['buros'] = $buroRoles;
+        $peopleWithBuro[] = $person;
     }
+
+	//echo Debug::vars('1095', $peopleWithBuro);exit;
+    
+    $this->template->content = View::factory('order/settings')
+        ->set('buros', $buros)
+        ->set('people', $peopleWithBuro);
+}
 
 	public function action_buro_details()
 {
@@ -1140,41 +1188,81 @@ public function action_delete_buro()
 }
 
    
-    public function action_UpdateBuro() {
+public function action_UpdateBuro() {
         $id_buro = $this->request->param('id');
-        $user = new Guest2();
-        $users = $user->getPeopleWithLogin();
-        $data = new Buro();
-        $buroList = $data->getBuro();
-        $roles = $data->getRoles();
-		//echo Debug::vars('1122', $users);exit;
+        $id_pep = $this->request->query('user_id');
         
-        if ($this->request->method() === 'POST') {
-            $post = $this->request->post();
-            
-            try {
+        $from_table = !empty($id_pep); 
+        $current_role_id = $this->request->query('role_id');
+        
+        $user = new Guest2();
+        $current_user = array();
+        if ($from_table) {
+            $current_user = $user->getPersonDetails($id_pep);
+            // Получаем role_id из базы, если не передан через GET
+            if (empty($current_role_id)) {
                 $buro = new Buro();
-                $buro->id_pep = Arr::get($post, 'user_id');
-                $buro->id_buro = Arr::get($post, 'buro_id');
-                $buro->id_role = Arr::get($post, 'role_id');
-                
-                $result = $buro->add();
-                
-                if ($result) {
-                    HTTP::redirect('/buro/update/' . $id_buro);
+                $records = $buro->getUsersByIdBuro($id_buro);
+                foreach ($records as $record) {
+                    if ($record['id_pep'] == $id_pep) {
+                        $current_role_id = $record['id_role'];
+                        break;
+                    }
                 }
-            } catch (Exception $e) {
-                Log::instance()->add(Log::ERROR, 'Ошибка добавления записи: ' . $e->getMessage());
-                $this->template->error = 'Произошла ошибка при добавлении записи';
             }
         }
         
+        $data = new Buro();
+        $roles = $data->getRoles();
+        $users = $user->getPeopleWithLogin();
+        
+        $error = null;
+        if ($this->request->method() === 'POST') {
+            $post = $this->request->post();
+            
+            // Проверяем наличие user_id и role_id в POST
+            if (isset($post['user_id']) && isset($post['role_id'])) {
+                $user_id = $post['user_id'];
+                $role_id = $post['role_id'];
+                $buro_id = $id_buro;
+                
+                $data->id_pep = $user_id;
+                $data->id_role = $role_id;
+                $data->id_buro = $buro_id;
+                
+                if ($from_table) {
+                    $existing_records = $data->getUsersByIdBuro($buro_id);
+                    foreach ($existing_records as $record) {
+                        if ($record['id_pep'] == $user_id) {
+                            $data->id = $record['id'];
+                            break;
+                        }
+                    }
+                    $result = $data->update($buro_id);
+                } else {
+                    $result = $data->add();
+                }
+                
+                if ($result) {
+                    $this->redirect('order/buro_details/' . $buro_id);
+                } else {
+                    $error = $from_table ? 'Не удалось обновить данные' : 'Не удалось добавить данные';
+                }
+            } else {
+                $error = 'Не выбраны сотрудник или роль';
+            }
+        }
+
         $this->template->content = View::factory('order/UpdateBuro')
             ->set('roles', $roles)
-            ->set('buroList', $buroList)
-            ->set('users', $users);
+            ->set('current_user', $current_user)
+            ->set('id_buro', $id_buro)
+            ->set('id_pep', $id_pep)
+            ->set('users', $users)
+            ->set('current_role_id', $current_role_id)
+            ->set('from_table', $from_table)
+            ->set('error', $error);
     }
-
 	public function action_addBuro()
 {
     $this->template->title = 'Добавление нового бюро';
@@ -1184,15 +1272,12 @@ public function action_delete_buro()
         try {
             $post = $this->request->post();
             
-            // Валидация данных
             if (empty($post['name'])) {
                 throw new Exception('Необходимо указать название бюро');
             }
-            
-            // Создаем экземпляр модели
+        
             $buro = new Buro();
             
-            // Добавляем новое бюро
             $result = $buro->addBuro($post['name'], $post['information']);
             
             if ($result) {
@@ -1207,5 +1292,140 @@ public function action_delete_buro()
         }
     }
 }
+
+public function action_update_buro()
+{
+    $id_buro = $this->request->param('id');
+    $post = $this->request->post();
+    
+    if (!$id_buro || empty($post)) {
+        Session::instance()->set('message', 'Не указаны данные для обновления');
+        Session::instance()->set('message_type', 'error');
+        $this->redirect('order/UpdateBuro');
+    }
+    
+    $buro = new Buro();
+    $result = $buro->updateBuro($id_buro, $post['name'], $post['information']);
+    
+    if ($result) {
+        Session::instance()->set('message', 'Информация о бюро успешно обновлена');
+        Session::instance()->set('message_type', 'success');
+    } else {
+        Session::instance()->set('message', 'Ошибка при обновлении бюро');
+        Session::instance()->set('message_type', 'error');
+    }
+    
+    $this->redirect('order/buro_details/'.$id_buro);
+}
+
+public function action_PersonalData()
+    {
+		//echo Debug::vars('1323');exit;
+        $id_pep = $this->request->param('id');
+        
+        // Создаем экземпляр модели Guest2
+        $guest = new Guest2();
+        
+        // Получаем данные о человеке
+        $person = $guest->getPersonDetails($id_pep);
+        
+        if (empty($person)) {
+            $this->response->body(json_encode(['status' => 'error', 'message' => 'Пользователь не найден']));
+            return;
+        }
+
+        // Формируем ФИО, проверяем и нормализуем данные
+        $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+        $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+        $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+
+        // Преобразуем кодировку, если нужно
+        if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
+            $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+            $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+            $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+        }
+
+        $full_name = trim("$surname $name $patronymic");
+        $full_name = preg_replace('/\s+/', ' ', $full_name);
+
+        // Передаем данные в представление
+        $view = View::factory('order/PersonalData')
+            ->set('id_pep', $id_pep)
+			->set('surname', $surname)
+			->set('name', $name)
+			->set('patronymic', $patronymic)
+            ->set('full_name', $full_name);
+
+        $this->template->content = $view;
+    }
+
+    public function action_save_signature()
+    {
+		//echo Debug::vars('1361');exit;
+        $this->auto_render = false;
+        $this->response->headers('Content-Type', 'application/json');
+
+        $id_pep = $this->request->param('id');
+        if ($this->request->method() !== Request::POST) {
+            $this->response->body(json_encode(['status' => 'error', 'message' => 'Недопустимый метод запроса']));
+            return;
+        }
+
+        $signature_data = $this->request->post('signature_data');
+        if (empty($signature_data)) {
+            $this->response->body(json_encode(['status' => 'error', 'message' => 'Подпись не предоставлена']));
+            return;
+        }
+
+        $signature_data = str_replace('data:image/jpeg;base64,', '', $signature_data);
+        $signature_data = str_replace(' ', '+', $signature_data);
+        $image = base64_decode($signature_data);
+
+        $upload_dir = DOCROOT . 'Uploads';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+
+        $guest = new Guest2();
+        $person = $guest->getPersonDetails($id_pep);
+        if (empty($person)) {
+            $full_name = 'Unknown_Unknown_Unknown';
+        } else {
+            $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+            $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+            $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+
+            if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
+                $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+                $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+                $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+            }
+
+            $full_name = trim("$surname_$name_$patronymic");
+        }
+        $full_name = preg_replace('/[^A-Za-z0-9_]/', '_', $full_name);
+
+        $filename = $id_pep . '.jpg';
+		//echo Debug::vars('1410', $filename);exit;
+        $filepath = $upload_dir . DIRECTORY_SEPARATOR . $filename;
+
+        if (file_exists($filepath)) {
+            $counter = 1;
+            $base_filename = pathinfo($filepath, PATHINFO_FILENAME);
+            $extension = pathinfo($filepath, PATHINFO_EXTENSION);
+            while (file_exists($filepath)) {
+                $filename = $base_filename . '_' . $counter . '.' . $extension;
+                $filepath = $upload_dir . DIRECTORY_SEPARATOR . $filename;
+                $counter++;
+            }
+        }
+
+        // Сохранение файла
+        file_put_contents($filepath, $image);
+
+        $this->response->body(json_encode(['status' => 'success', 'message' => 'Подпись сохранена', 'file' => $filename]));
+    }
+
 }
 	

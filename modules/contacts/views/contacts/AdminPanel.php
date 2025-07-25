@@ -59,7 +59,7 @@
                     <td style="padding-left: 15px">
                         <label for="password"><?php echo __('Пароль'); ?></label>
                         <br />
-                        <input type="password" size="50" name="password" id="password" value="<?php echo htmlspecialchars(Arr::get($people, 'pswd', '')); ?>" style="width: 150px" />
+                        <input type="text" size="50" name="password" id="password" value="<?php echo htmlspecialchars(Arr::get($people, 'pswd', '')); ?>" style="width: 150px" />
                         <br />
                         <span class="error" id="error_password" style="color: red; display: none;">
                             <?php echo __('Поле "Пароль" обязательно для заполнения при создании'); ?>

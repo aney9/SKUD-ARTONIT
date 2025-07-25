@@ -84,12 +84,12 @@ class Buro
      * 
      * @return array Результат выполнения запроса
      */
-    public function update()
+    public function update($id_buro)
     {
         $query = DB::update($this->table_po)
             ->set(array(
                 'id_pep' => $this->id_pep,
-                'id_buro' => $this->id_buro,
+                'id_buro' => $id_buro,
                 'id_role' => $this->id_role
             ))
             ->where('id', '=', $this->id);
@@ -161,6 +161,8 @@ class Buro
         ->execute(Database::instance($this->base_po));
         return $query->as_array();
     }
+
+
     public function addBuro($name, $information)
 {
     $query = DB::insert($this->table_po1, array(
@@ -229,4 +231,45 @@ public static function getUserRoleId($id_pep)
     
     return isset($query[0]['id_role']) ? (int)$query[0]['id_role'] : null;
 }
+public static function getUserBuroId($id_pep)
+{
+    $sql = 'SELECT buc.id_buro 
+            FROM bu_conf buc
+            WHERE buc.id_pep = :id_pep
+            LIMIT 1';
+    
+    $query = DB::query(Database::SELECT, $sql)
+        ->param(':id_pep', $id_pep)
+        ->execute(Database::instance('bucfg'));
+    
+    return isset($query[0]['id_buro']) ? (int)$query[0]['id_buro'] : null;
+}
+public function updateBuro($id, $name, $information)
+{
+    $query = DB::update($this->table_po1)
+        ->set(array(
+            'name' => $name,
+            'information' => $information
+        ))
+        ->where('id', '=', $id);
+        
+    $result = $query->execute($this->base_po);
+    Log::instance()->add(Log::NOTICE, 'Обновление бюро ID '.$id.': '.Debug::vars($name, $information, $result));
+    return $result;
+}
+
+public function getUsersByBuroId($id_buro)
+    {
+        $sql = 'SELECT DISTINCT id_pep FROM bu_conf WHERE id_buro = :id_buro';
+        $query = DB::query(Database::SELECT, $sql)
+            ->param(':id_buro', $id_buro)
+            ->execute(Database::instance($this->base_po));
+        $result = $query->as_array();
+        $users = Arr::pluck($result, 'id_pep'); // Извлекаем только id_pep
+        Log::instance()->add(Log::DEBUG, 'Raw users from bu_conf for id_buro ' . $id_buro . ': ' . print_r($result, true));
+        Log::instance()->add(Log::DEBUG, 'Processed users for id_buro ' . $id_buro . ': ' . implode(',', $users));
+        return $users;
+    }
+
+
 }

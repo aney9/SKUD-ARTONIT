@@ -738,17 +738,20 @@ public function update($id_pep)
             return $this->id;
     }
 
-	public function getPeopleWithLogin() {
+public function getPeopleWithLogin() {
     $sql = "SELECT 
-                p.id_pep AS id_pep, 
-                p.surname AS surname, 
-                p.name AS name, 
-                p.patronymic AS patronymic 
+                p.ID_PEP AS ID_PEP, 
+                p.SURNAME AS SURNAME, 
+                p.NAME AS NAME, 
+                p.PATRONYMIC AS PATRONYMIC,
+                p.ID_ORG AS ID_ORG,
+                o.NAME AS ORG_NAME
             FROM people p
-            WHERE p.login IS NOT NULL 
-              AND p.login != ''
-              AND p.pswd IS NOT NULL
-              AND p.pswd != ''";
+            LEFT JOIN organization o ON o.ID_ORG = p.ID_ORG
+            WHERE p.LOGIN IS NOT NULL 
+              AND p.LOGIN != ''
+              AND p.PSWD IS NOT NULL
+              AND p.PSWD != ''";
     
     $query = DB::query(Database::SELECT, $sql)
         ->execute(Database::instance('fb'));
@@ -759,7 +762,9 @@ public function update($id_pep)
             'ID_PEP' => $row['ID_PEP'],
             'SURNAME' => !empty($row['SURNAME']) ? iconv('CP1251', 'UTF-8', $row['SURNAME']) : '',
             'NAME' => !empty($row['NAME']) ? iconv('CP1251', 'UTF-8', $row['NAME']) : '',
-            'PATRONYMIC' => !empty($row['PATRONYMIC']) ? iconv('CP1251', 'UTF-8', $row['PATRONYMIC']) : ''
+            'PATRONYMIC' => !empty($row['PATRONYMIC']) ? iconv('CP1251', 'UTF-8', $row['PATRONYMIC']) : '',
+            'ID_ORG' => $row['ID_ORG'],
+            'ORG_NAME' => !empty($row['ORG_NAME']) ? iconv('CP1251', 'UTF-8', $row['ORG_NAME']) : ''
         ];
     }
     
@@ -785,6 +790,56 @@ public function getUserById($id){
     }
     
     return $result;
+}
+
+
+public function getPersonDetails($id_pep)
+{
+    $sql = "SELECT 
+                p.ID_PEP, 
+                p.SURNAME, 
+                p.NAME, 
+                p.PATRONYMIC,
+                p.ID_ORG,
+                o.NAME AS ORG_NAME,
+                p.LOGIN,
+                p.TABNUM,
+                p.NUMDOC,
+                p.DATEDOC,
+                p.NOTE
+            FROM people p
+            LEFT JOIN organization o ON o.ID_ORG = p.ID_ORG
+            WHERE p.ID_PEP = :id_pep";
+    
+    try {
+        $query = DB::query(Database::SELECT, $sql)
+            ->param(':id_pep', $id_pep)
+            ->execute(Database::instance('fb'));
+        
+        if ($query->count() === 0) {
+            return [];
+        }
+        
+        $row = $query->current();
+        
+        return [
+            'ID_PEP' => $row['ID_PEP'],
+            'SURNAME' => !empty($row['SURNAME']) ? iconv('CP1251', 'UTF-8', $row['SURNAME']) : '',
+            'NAME' => !empty($row['NAME']) ? iconv('CP1251', 'UTF-8', $row['NAME']) : '',
+            'PATRONYMIC' => !empty($row['PATRONYMIC']) ? iconv('CP1251', 'UTF-8', $row['PATRONYMIC']) : '',
+            'ID_ORG' => $row['ID_ORG'],
+            'ORG_NAME' => !empty($row['ORG_NAME']) ? iconv('CP1251', 'UTF-8', $row['ORG_NAME']) : '',
+            'LOGIN' => !empty($row['LOGIN']) ? $row['LOGIN'] : '',
+            'TABNUM' => !empty($row['TABNUM']) ? $row['TABNUM'] : '',
+            'NUMDOC' => !empty($row['NUMDOC']) ? iconv('CP1251', 'UTF-8', $row['NUMDOC']) : '',
+            'DATEDOC' => !empty($row['DATEDOC']) ? $row['DATEDOC'] : '',
+            'NOTE' => !empty($row['NOTE']) ? iconv('CP1251', 'UTF-8', $row['NOTE']) : ''
+        ];
+        
+    } catch (Exception $e) {
+        Log::instance()->add(Log::ERROR, 'Ошибка при получении данных пользователя: ' . $e->getMessage());
+        return [];
+    }
 }
 	
 }

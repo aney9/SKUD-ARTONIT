@@ -139,7 +139,7 @@ return [
 					'icon'    => 'icon_guest.png',
 					'title'   => 'passoffice.passoffice',
 					'tooltip' => 'passoffice.passoffice',
-					'visible' => true, // можно запретить показ, если false
+					'visible' => false, // можно запретить показ, если false
 					'items'   => [
 						'guestslist'=>[
 									'url'     => 'passoffices/guest',

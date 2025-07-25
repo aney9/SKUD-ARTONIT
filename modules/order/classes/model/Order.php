@@ -29,26 +29,9 @@ class Model_Order extends Model
 	*если для указанного $id_pep нет записей, то результатом будет null
 	*/
 	
-	public function getListNowOrder($id_pep, $mode = null)
-	{
-		//$configcdf=Kohana::$config->load('guest');//загрузка данных из вспомогательной базы данных, хотя надо будет брать данные из настоящей БД СКУД
-		
-
-
-		// $sql = 'SELECT gu.id_guestorder, g.id_guest, o.id_org 
-        //     FROM guestorder gu 
-        //     JOIN guest g ON gu.id_guest = g.id_guest 
-        //     JOIN organization o ON gu.id_org = o.id_org 
-        //     WHERE g.id_guest IN (' . DB::expr($idGuest) . ') 
-        //     AND o.id_org IN (' . DB::expr($idOrgGuest) . ')';
-		
-		// $query = Arr::flatten(DB::query(Database::SELECT, $sql)
-		// ->execute(Database::instance('fb'))
-		//     ->as_array()
-		// );
-		// return $query;
-
-		 $sql = 'SELECT 
+public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_filter = '')
+    {
+        $sql = 'SELECT 
             gu.id_guestorder, 
             g."ID_PEP" AS id_guest, 
             g."SURNAME" AS guest_surname, 
@@ -58,8 +41,8 @@ class Model_Order extends Model
             o."NAME" AS org_name, 
             p."SURNAME" AS p_surname, 
             gu.timeplan,
-			gu.timeorder,
-			p."ID_PEP" as id_pep,
+            gu.timeorder,
+            p."ID_PEP" as id_pep,
             c_g.id_card AS guest_card_number,
             c_g."CREATEDAT" as createdat
         FROM guestorder gu 
@@ -67,25 +50,49 @@ class Model_Order extends Model
         JOIN organization o ON gu.id_org = o.id_org
         JOIN people p ON gu.id_pep = p.id_pep  
         LEFT JOIN card c_g ON g.id_pep = c_g.id_pep 
-        WHERE ' . ($id_pep == 1 ? '1=1' : 'gu.id_pep = ' . DB::expr($id_pep));
+        WHERE ';
 
-	if ($mode === 'guest_mode') {
-		$sql .= ' AND CAST(gu.timeplan AS DATE) >= CURRENT_DATE';
-		$sql .= ' ORDER BY gu.timeplan ASC';
-	} elseif ($mode === 'archive_mode') {
-		$sql .= ' AND CAST(gu.timeplan AS DATE) < CURRENT_DATE';
-		$sql .= ' ORDER BY gu.timeplan DESC';
-	}
+        if ($user_role == 1) {
+            $sql .= '1=1'; 
+        } elseif ($user_role == 2) {
+            $sql .= $buro_filter ? $buro_filter : '1=0';
+        } else {
+            $sql .= 'gu.id_pep = :id_pep'; 
+        }
 
-	//echo Debug::vars('73', $sql);exit;
-	$query = DB::query(Database::SELECT, $sql)
-    ->execute(Database::instance('fb'))
-    ->as_array();
-	//echo Debug::vars('78', $query);exit;
-return $query;
+        if ($mode === 'guest_mode') {
+            $sql .= ' AND CAST(gu.timeplan AS DATE) >= CURRENT_DATE';
+            $sql .= ' ORDER BY gu.timeplan ASC';
+        } elseif ($mode === 'archive_mode') {
+            $sql .= ' AND CAST(gu.timeplan AS DATE) < CURRENT_DATE';
+            $sql .= ' ORDER BY gu.timeplan DESC';
+        }
 
-	
-	}
+        Log::instance()->add(Log::DEBUG, 'SQL query: ' . $sql);
+
+        try {
+            $query = DB::query(Database::SELECT, $sql);
+            if ($user_role != 1 && $user_role != 2) {
+                $query->param(':id_pep', $id_pep);
+            }
+            $result = $query->execute(Database::instance('fb'))->as_array();
+            if (empty($result)) {
+                Log::instance()->add(Log::DEBUG, 'No records found, result is empty');
+            } else {
+                Log::instance()->add(Log::DEBUG, 'Result structure: ' . print_r(array_keys($result[0]), true));
+                $timeplans = array_map(function($row) {
+                    return isset($row['timeplan']) ? $row['timeplan'] : 'NULL';
+                }, $result);
+                Log::instance()->add(Log::DEBUG, 'Timeplan values: ' . implode(', ', $timeplans));
+            }
+            return $result;
+        } catch (Exception $e) {
+            Log::instance()->add(Log::ERROR, 'Database error: ' . $e->getMessage());
+            return array();
+        }
+    }
+
+
 	
 	
 	
