@@ -1,200 +1,160 @@
-const wrapper = document.getElementById("signature-pad");
-const canvasWrapper = document.getElementById("canvas-wrapper");
-const clearButton = wrapper.querySelector("[data-action=clear]");
-const changeBackgroundColorButton = wrapper.querySelector("[data-action=change-background-color]");
-const changeColorButton = wrapper.querySelector("[data-action=change-color]");
-const changeWidthButton = wrapper.querySelector("[data-action=change-width]");
-const undoButton = wrapper.querySelector("[data-action=undo]");
-const redoButton = wrapper.querySelector("[data-action=redo]");
-const savePNGButton = wrapper.querySelector("[data-action=save-png]");
-const saveJPGButton = wrapper.querySelector("[data-action=save-jpg]");
-const saveSVGButton = wrapper.querySelector("[data-action=save-svg]");
-const saveSVGWithBackgroundButton = wrapper.querySelector("[data-action=save-svg-with-background]");
-const openInWindowButton = wrapper.querySelector("[data-action=open-in-window]");
-let undoData = [];
-const canvas = wrapper.querySelector("canvas");
-const signaturePad = new SignaturePad(canvas, {
-  // It's Necessary to use an opaque color when saving image as JPEG;
-  // this option can be omitted if only saving as PNG or SVG
-  backgroundColor: 'rgb(255, 255, 255)'
-});
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('app.js loaded');
 
-function randomColor() {
-  const r = Math.round(Math.random() * 255);
-  const g = Math.round(Math.random() * 255);
-  const b = Math.round(Math.random() * 255);
-  return `rgb(${r},${g},${b})`;
-}
+    // Проверка наличия SignaturePad
+    if (typeof SignaturePad === 'undefined') {
+        console.error('SignaturePad is not defined. Check if signature_pad.umd.min.js is loaded correctly.');
+        return;
+    }
 
-// Adjust canvas coordinate space taking into account pixel ratio,
-// to make it look crisp on mobile devices.
-// This also causes canvas to be cleared.
-function resizeCanvas() {
-  // When zoomed out to less than 100%, for some very strange reason,
-  // some browsers report devicePixelRatio as less than 1
-  // and only part of the canvas is cleared then.
-  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const wrapper = document.getElementById('signature-pad');
+    const canvas = document.getElementById('signature-canvas');
+    const clearButton = document.getElementById('clear');
+    const saveJPGButton = document.getElementById('save-jpg');
 
-  // This part causes the canvas to be cleared
-  canvas.width = canvas.offsetWidth * ratio;
-  canvas.height = canvas.offsetHeight * ratio;
-  canvas.getContext("2d").scale(ratio, ratio);
+    // Проверка наличия всех элементов
+    if (!wrapper || !canvas || !clearButton || !saveJPGButton) {
+        console.error('One or more required DOM elements are missing:', {
+            wrapper: !!wrapper,
+            canvas: !!canvas,
+            clearButton: !!clearButton,
+            saveJPGButton: !!saveJPGButton
+        });
+        return;
+    }
 
-  // This library does not listen for canvas changes, so after the canvas is automatically
-  // cleared by the browser, SignaturePad#isEmpty might still return false, even though the
-  // canvas looks empty, because the internal data of this library wasn't cleared. To make sure
-  // that the state of this library is consistent with visual state of the canvas, you
-  // have to clear it manually.
-  //signaturePad.clear();
+    // Инициализация SignaturePad
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)',
+        penColor: 'rgb(0, 0, 0)',
+        onBegin: () => console.log('Drawing started'),
+        onEnd: () => console.log('Drawing ended')
+    });
 
-  // If you want to keep the drawing on resize instead of clearing it you can reset the data.
-  signaturePad.fromData(signaturePad.toData());
-}
+    // Проверка инициализации canvas
+    console.log('SignaturePad initialized on canvas:', canvas);
 
-// On mobile devices it might make more sense to listen to orientation change,
-// rather than window resize events.
-window.onresize = resizeCanvas;
-resizeCanvas();
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        // Восстанавливаем данные подписи после ресайза
+        const data = signaturePad.toData();
+        signaturePad.clear();
+        signaturePad.fromData(data);
+        console.log('Canvas resized:', canvas.width, canvas.height);
+    }
 
-window.addEventListener("keydown", (event) => {
-  switch (true) {
-    case event.key === "z" && event.ctrlKey:
-      undoButton.click();
-      break;
-    case event.key === "y" && event.ctrlKey:
-      redoButton.click();
-      break;
-  }
-});
-
-function download(dataURL, filename) {
-  const blob = dataURLToBlob(dataURL);
-  const url = window.URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.style = "display: none";
-  a.href = url;
-  a.download = filename;
-
-  document.body.appendChild(a);
-  a.click();
-
-  window.URL.revokeObjectURL(url);
-}
-
-// One could simply use Canvas#toBlob method instead, but it's just to show
-// that it can be done using result of SignaturePad#toDataURL.
-function dataURLToBlob(dataURL) {
-  // Code taken from https://github.com/ebidel/filer.js
-  const parts = dataURL.split(';base64,');
-  const contentType = parts[0].split(":")[1];
-  const raw = window.atob(parts[1]);
-  const rawLength = raw.length;
-  const uInt8Array = new Uint8Array(rawLength);
-
-  for (let i = 0; i < rawLength; ++i) {
-    uInt8Array[i] = raw.charCodeAt(i);
-  }
-
-  return new Blob([uInt8Array], { type: contentType });
-}
-
-signaturePad.addEventListener("endStroke", () => {
-  // clear undoData when new data is added
-  undoData = [];
-});
-
-clearButton.addEventListener("click", () => {
-  signaturePad.clear();
-});
-
-undoButton.addEventListener("click", () => {
-  const data = signaturePad.toData();
-
-  if (data && data.length > 0) {
-    // remove the last dot or line
-    const removed = data.pop();
-    undoData.push(removed);
-    signaturePad.fromData(data);
-  }
-});
-
-redoButton.addEventListener("click", () => {
-  if (undoData.length > 0) {
-    const data = signaturePad.toData();
-    data.push(undoData.pop());
-    signaturePad.fromData(data);
-  }
-});
-
-changeBackgroundColorButton.addEventListener("click", () => {
-  signaturePad.backgroundColor = randomColor();
-  const data = signaturePad.toData();
-  signaturePad.clear();
-  signaturePad.fromData(data);
-});
-
-changeColorButton.addEventListener("click", () => {
-  signaturePad.penColor = randomColor();
-});
-
-changeWidthButton.addEventListener("click", () => {
-  const min = Math.round(Math.random() * 100) / 10;
-  const max = Math.round(Math.random() * 100) / 10;
-
-  signaturePad.minWidth = Math.min(min, max);
-  signaturePad.maxWidth = Math.max(min, max);
-});
-
-savePNGButton.addEventListener("click", () => {
-  if (signaturePad.isEmpty()) {
-    alert("Please provide a signature first.");
-  } else {
-    const dataURL = signaturePad.toDataURL();
-    download(dataURL, "signature.png");
-  }
-});
-
-saveJPGButton.addEventListener("click", () => {
-  if (signaturePad.isEmpty()) {
-    alert("Please provide a signature first.");
-  } else {
-    const dataURL = signaturePad.toDataURL("image/jpeg");
-    download(dataURL, "signature.jpg");
-  }
-});
-
-saveSVGButton.addEventListener("click", () => {
-  if (signaturePad.isEmpty()) {
-    alert("Please provide a signature first.");
-  } else {
-    const dataURL = signaturePad.toDataURL('image/svg+xml');
-    download(dataURL, "signature.svg");
-  }
-});
-
-saveSVGWithBackgroundButton.addEventListener("click", () => {
-  if (signaturePad.isEmpty()) {
-    alert("Please provide a signature first.");
-  } else {
-    const dataURL = signaturePad.toDataURL('image/svg+xml', { includeBackgroundColor: true });
-    download(dataURL, "signature.svg");
-  }
-});
-
-openInWindowButton.addEventListener("click", () => {
-	var externalWin = window.open('', '', `width=${canvas.width / window.devicePixelRatio},height=${canvas.height / window.devicePixelRatio}`);
-  canvas.style.width = "100%";
-  canvas.style.height = "100%";
-  externalWin.onresize = resizeCanvas;
-  externalWin.document.body.style.margin = '0';
-	externalWin.document.body.appendChild(canvas);
-  canvasWrapper.classList.add("empty");
-  externalWin.onbeforeunload = () => {
-    canvas.style.width = "";
-    canvas.style.height = "";
-    canvasWrapper.classList.remove("empty");
-    canvasWrapper.appendChild(canvas);
+    window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-  };
-})
+
+    clearButton.addEventListener('click', () => {
+        signaturePad.clear();
+        console.log('Canvas cleared');
+    });
+
+    saveJPGButton.addEventListener('click', () => {
+        if (signaturePad.isEmpty()) {
+            alert('Пожалуйста, сначала добавьте подпись.');
+            console.log('Save attempted but canvas is empty');
+            return;
+        }
+
+        const tempCanvas = document.createElement('canvas');
+        const tempContext = tempCanvas.getContext('2d');
+        const fullName = '<?php echo isset($full_name) ? htmlspecialchars($full_name) : '134'; ?>';
+        const idPep = '<?php echo isset($id_pep) ? htmlspecialchars($id_pep) : "0"; ?>';
+        const headerText = 'Я, ' + fullName + ', подтверждаю, что я предоставляю свое согласие на обработку персональных данных в соответствии с Федеральным законом №152-ФЗ "О персональных данных". Согласие распространяется на сбор, систематизацию, накопление, хранение, уточнение, использование, распространение и иные действия с моими персональными данными в рамках целей, связанных с заключением и исполнением договоров, а также предоставлением услуг. Я осведомлен о праве отозвать согласие в любой момент путем направления письменного уведомления. Данное согласие действует до момента его отзыва или истечения срока, установленного законодательством Российской Федерации.';
+        const signatureText = 'Подпись документа: Согласие на обработку данных';
+
+        const lines = [];
+        let currentLine = '';
+        const words = headerText.split(' ');
+        const maxWidth = canvas.width - 40;
+        tempContext.font = '16px Helvetica';
+        tempContext.textAlign = 'left';
+
+        words.forEach(word => {
+            const testLine = currentLine + word + ' ';
+            const metrics = tempContext.measureText(testLine);
+            if (metrics.width > maxWidth && currentLine !== '') {
+                lines.push(currentLine.trim());
+                currentLine = word + ' ';
+            } else {
+                currentLine = testLine;
+            }
+        });
+        if (currentLine !== '') {
+            lines.push(currentLine.trim());
+        }
+
+        const lineHeight = 20;
+        const headerHeight = lines.length * lineHeight + 10;
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height + headerHeight + 30;
+
+        tempContext.fillStyle = 'white';
+        tempContext.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        tempContext.font = '16px Helvetica';
+        tempContext.fillStyle = '#333';
+        tempContext.textAlign = 'left';
+        lines.forEach((line, i) => {
+            tempContext.fillText(line, 20, 20 + i * lineHeight);
+        });
+
+        tempContext.textAlign = 'center';
+        tempContext.fillText(signatureText, tempCanvas.width / 2, headerHeight + 20);
+
+        tempContext.drawImage(canvas, 0, headerHeight + 30);
+
+        const dataURL = tempCanvas.toDataURL('image/jpeg', 0.8);
+        console.log('JPG generated, downloading...');
+
+        const link = document.createElement('a');
+        const sanitizedFullName = fullName.replace(/[^A-Za-z0-9_]/g, '_').replace(/\s+/g, '_');
+        link.download = idPep + '.jpg';
+        link.href = dataURL;
+        link.click();
+
+        const saveUrl = '/index.php/guest/save_signature/' + idPep;
+        fetch(saveUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'signature_data=' + encodeURIComponent(dataURL)
+        }).then(response => {
+            console.log('Signature saved to server:', response.status);
+        }).catch(error => {
+            console.error('Error saving signature to server:', error);
+        });
+    });
+
+    function download(dataURL, filename) {
+        const blob = dataURLToBlob(dataURL);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        console.log('File downloaded:', filename);
+    }
+
+    function dataURLToBlob(dataURL) {
+        const parts = dataURL.split(';base64,');
+        const contentType = parts[0].split(':')[1];
+        const raw = window.atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+        for (let i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+        return new Blob([uInt8Array], { type: contentType });
+    }
+});

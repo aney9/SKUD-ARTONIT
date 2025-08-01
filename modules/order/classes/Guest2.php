@@ -190,7 +190,7 @@ class Guest2
 					
 					
 					
-					$this->setAclDefault();// заполнение таблицы SS_ACCESSUSER
+					//$this->setAclDefault();// заполнение таблицы SS_ACCESSUSER
 					return $this->id_pep;
 
 				} catch (Exception $e) {
@@ -224,50 +224,17 @@ class Guest2
 	/*
 	Добавление пользователя в таблицу ss_accessuser в соответствии с правами организации.
 	*/
-	public function setAclDefault()
-	{
-		$sql='select sso.id_accessname from  ss_accessorg sso
-		where sso.id_org='.$this->idOrgGuest;
-		
-		try
-		{
-			
-			$query = DB::query(Database::SELECT, $sql)
-				->execute(Database::instance('fb'))
-				->as_array();
-				//echo Debug::vars('158', $query); exit;
-			foreach ($query as $key=>$value){
-				$sql2='INSERT INTO SS_ACCESSUSER (ID_DB,ID_PEP,ID_ACCESSNAME,USERNAME) VALUES (1,'.$this->id_pep.','.Arr::get($value, 'ID_ACCESSNAME').',\'ADMIN\')';
-				//echo Debug::vars('158', $sql2); exit;
-				try {
-						$query = DB::query(Database::INSERT, $sql2)
-						->execute(Database::instance('fb'));
-						$this->actionResult=0;
-						
-				} catch (Exception $e) {
-				
-					$this->actionResult=3;
-					//$this->actionDesc=__('guest.addTabNumErr', array(':surname'=>$this->surname,':name'=>$this->name,':patronymic'=>$this->patronymic,':tabnum'=>$this->tabnum));
-					Log::instance()->add(Log::DEBUG, '178 '.$e->getMessage());
-					return 3;
-				}
-			
-			}
-			
-			$this->actionResult=0;
-			return 0;
-			//$this->actionDesc=__('guest.addTabNumOk', array(':surname'=>$this->surname,':name'=>$this->name,':patronymic'=>$this->patronymic,':tabnum'=>$this->tabnum));
-		
-		} catch (Exception $e) {
-			
-			$this->actionResult=3;
-			//$this->actionDesc=__('guest.addTabNumErr', array(':surname'=>$this->surname,':name'=>$this->name,':patronymic'=>$this->patronymic,':tabnum'=>$this->tabnum));
-			Log::instance()->add(Log::DEBUG, '178 '.$e->getMessage());
-			return 3;
-			
-		}
-		
-	}
+	public function setAclDefault($id_pep, $id_accessname)
+{
+    $deleteSql = 'DELETE FROM SS_ACCESSUSER WHERE ID_PEP = ' . (int)$id_pep;
+    DB::query(Database::DELETE, $deleteSql)->execute(Database::instance('fb'));
+    
+    $insertSql = 'INSERT INTO SS_ACCESSUSER (ID_DB, ID_PEP, ID_ACCESSNAME, USERNAME) VALUES (1, ' . (int)$id_pep . ', ' . (int)$id_accessname . ', \'ADMIN\')';
+    DB::query(Database::INSERT, $insertSql)->execute(Database::instance('fb'));
+    
+    $this->actionResult = 0;
+    return 0;
+}
 	
 	
 	public function WsetTabNum()

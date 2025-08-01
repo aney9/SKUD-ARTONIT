@@ -1,4 +1,15 @@
+<?php defined('SYSPATH') OR die('No direct access allowed.'); ?>
+
 <?php
+$flash_success = Session::instance()->get_once('flash_success');
+$flash_error = Session::instance()->get_once('flash_error');
+if ($flash_success) {
+    echo '<div style="color: green; margin-bottom: 10px;">' . htmlspecialchars($flash_success) . '</div>';
+}
+if ($flash_error) {
+    echo '<div style="color: red; margin-bottom: 10px;">' . htmlspecialchars($flash_error) . '</div>';
+}
+
 include Kohana::find_file('views', 'alert');
 
 $guest = new Guest2($id_pep);
@@ -38,7 +49,7 @@ $user = new User();
     </div>
     <br class="clear" />
     <div class="content">
-        <form action="order/save" method="post" onsubmit="return validate()">
+        <form action="order/save" method="post" id="main_form" onsubmit="return validate()">
             <input type="hidden" name="hidden" value="form_sent" />
             <input type="hidden" name="id_pep" value="<?php echo $id_pep; ?>" />
 
@@ -63,12 +74,12 @@ $user = new User();
                                 include Kohana::find_file('views', 'order/block/card_dates');
                                 break;
                             case 'guest_mode':  
-                                if ($user -> id_role == 1){
+                                if ($user->id_role == 1) {
                                     include Kohana::find_file('views', 'order/block/rfid');
                                     echo '<br>';
                                     include Kohana::find_file('views', 'order/block/card_dates');
-                                    break;
                                 }
+                                break;
                             case 'archive_mode':
                                 if (!empty($cardlist[0]['ID_CARD'])) {
                                     include Kohana::find_file('views', 'order/block/rfid');
@@ -91,6 +102,10 @@ $user = new User();
                             case 'archive_mode':
                             case 'buro':
                                 include Kohana::find_file('views', 'order/block/note');
+                                if ($mode == 'buro' && $user->id_role == 2) {
+                                    echo '<br>';
+                                    include Kohana::find_file('views', 'order/block/access_checkboxes');
+                                }
                                 break;
                         }
                         ?>
@@ -106,54 +121,68 @@ $user = new User();
                     echo Form::submit('savenew', __('Добавить гостя214'));
                     break;
                 case 'guest_mode':
-                    if ($user->id_role != 1){
+                    if ($user->id_role != 1) {
                         echo Form::open('order/save');
                         echo Form::hidden('id_pep', $id_pep);
                         echo Form::hidden('todo', 'forceexit');
                         echo Form::close();
                     } else if ($user->id_role == 1) {
                         $mode = 'buro';
-    
-                    echo Form::hidden('todo', 'reissue'); 
-                    echo Form::submit('reissue', __('Обновить233'), [
-                        'onclick' => "this.form.elements.todo.value='reissue'"
-                    ]);
-                    
-                    if (!empty($cardlist[0]['ID_CARD'])) {
-                        echo Form::submit('forceexit', __('Забрать карту!'), [
-                            'onclick' => "this.form.elements.todo.value='forceexit'"
-                        ]);
-                    }
-
+                        echo Form::hidden('todo', 'reissue'); 
+                        echo Form::submit('reissue', __('Обновить233'), array(
+                            'onclick' => "this.form.elements.todo.value='reissue'"
+                        ));
+                        
+                        $pd = new PD($id_pep);
+                        $signature_file = $pd->checkSignature($id_pep);
+                        if ($signature_file === false || !file_exists($signature_file)) {
+                            echo Form::submit('consent', __('Согласие'), array(
+                                'onclick' => "this.form.elements.todo.value='consent'"
+                            ));
+                        } else {
+                            $signature_url = '/Uploads/signatures/' . basename($signature_file);
+                            echo '<a href="' . htmlspecialchars($signature_url) . '" target="_blank" class="btn">' . __('Просмотреть подпись') . '</a>';
+                        }
+                        
+                        if (!empty($cardlist[0]['ID_CARD'])) {
+                            echo Form::submit('forceexit', __('Забрать карту!'), array(
+                                'onclick' => "this.form.elements.todo.value='forceexit'"
+                            ));
+                        }
                     }
                     break;
                 case 'archive_mode':
-                    if ($user->id_role == 1){
+                    if ($user->id_role == 1) {
                         echo Form::hidden('todo', 'forceexit');
                         echo Form::submit('forceexit', __('Забрать карту!133'));
                     }
                     break;
                 case 'buro':
-                
-                    if ($user->id_role == 1) {
-                         echo Form::hidden('todo', 'reissue'); 
-                    echo Form::submit('reissue', __('Обновить233'), [
-                        'onclick' => "this.form.elements.todo.value='reissue'"
-                        
-                    ]);
-                    
-                    echo Form::submit('consent', __('Согласие'), array(
-                            'onclick' => "this.form.elements.todo.value='consent'"
+                    if ($user->id_role == 1 || $user->id_role == 2) {
+                        echo Form::hidden('todo', 'reissue'); 
+                        echo Form::submit('reissue', __('Обновить233'), array(
+                            'onclick' => "this.form.elements.todo.value='reissue'"
                         ));
-                    if (!empty($cardlist[0]['ID_CARD'])) {
-                        echo Form::submit('forceexit', __('Забрать карту!'), [
-                            'onclick' => "this.form.elements.todo.value='forceexit'"
-                        ]);
-                    }
-                    
+                        
+                        $pd = new PD($id_pep);
+                        $signature_file = $pd->checkSignature($id_pep);
+                        if ($signature_file === false || !file_exists($signature_file)) {
+                            echo Form::submit('consent', __('Согласие'), array(
+                                'onclick' => "this.form.elements.todo.value='consent'"
+                            ));
+                        } else {
+                            $signature_url = '/Uploads/signatures/' . basename($signature_file);
+                            echo '<a href="' . htmlspecialchars($signature_url) . '" target="_blank" class="btn">' . __('Просмотреть подпись') . '</a>';
+                        }
+                        
+                        if (!empty($cardlist[0]['ID_CARD'])) {
+                            echo Form::submit('forceexit', __('Забрать карту!'), array(
+                                'onclick' => "this.form.elements.todo.value='forceexit'"
+                            ));
+                        }
                     } else {
-                        echo Form::hidden('todo', 'savenew');
-                        echo Form::submit('savenew', __('Добавить гостя230'));
+                        echo Form::hidden('todo', 'update');
+                        echo Form::submit('update', __('Обновить гостя'));
                     }
                     break;
                 default:
@@ -166,8 +195,6 @@ $user = new User();
             echo 'id_pep=' . $guest->id_pep;
             echo '<br>';
             echo 'mode=' . $mode;
-            echo '<br>';
-            echo Debug::vars('249', $user);
             ?>
         </form>
     </div>

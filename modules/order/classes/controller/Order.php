@@ -159,8 +159,14 @@ public function action_index($filter = null)
         $buro = new Buro();
         $buro_filter = '';
 
+		$access_names = [];
+    	$current_accesses = [];
+
         if ($user_role == 2 && !is_null($id_buro)) {
             $users = $buro->getUsersByBuroId($id_buro);
+			$access_names = $buro->getAccessName();
+			$current_accesses = Arr::pluck($buro->getBuroAccesses($id_buro), 'id_accessname');
+
             if (!in_array($id_pep, $users)) {
                 $users[] = $id_pep;
             }
@@ -424,6 +430,13 @@ public function action_index($filter = null)
 							$key->id_pep=$guest->id_pep;
 							$key->flag=1;
 							$key->rfidmode=$rfidmode;
+							$id_pep = $guest->id_pep;
+							$id_accessname = Arr::get($_POST, 'ACCESS_NAME');
+							if ($id_accessname) {
+        						$guest->setAclDefault($id_pep, $id_accessname);
+    						}
+							//echo Debug::vars('435', $id_accessname);exit;
+							//echo Debug::vars('433',$id_pep);exit;
 							
 							//присвоедние карты RFID
 							if($key->addRfid()==0) { //сохраняю карту RFID
@@ -461,11 +474,13 @@ public function action_index($filter = null)
     		// $arrAlert[] = array('actionResult' => 0, 'actionDesc' => $alert);
     		// Session::instance()->set('arrAlert', $arrAlert);
     		// $this->redirect('order/edit/' . $id);
+			//$this->session->set('mode', 'buro');
+    		$this->redirect('order/edit/' . $id .'/buro');
 			break;
 	}
 			
 		//$this->redirect('order');
-		$this->redirect('order/edit/' . $id);
+		// $this->redirect('order/edit/' . $id);
 	}
 
 	
@@ -479,63 +494,69 @@ public function action_index($filter = null)
 	
 
 	public function action_edit()
-{
-    //echo Debug::vars('415', $_POST);exit;
-    $id_pep = $this->request->param('id'); // кого редактируем
-    $mode = $this->request->param('mode'); // режим работы
-	//echo Debug::vars('454', $mode);exit;
+    {
+        $id_pep = $this->request->param('id');
+        $mode = $this->request->param('mode');
+        $force_org = $this->request->query('id_org');
 
-    $force_org = $this->request->query('id_org'); // получаю id_org, куда надо записать гостя. наличие этого параметра означает, что надо выбрать именно указанную организацию
-    
-    //echo Debug::vars($guest);exit;
-    $org_tree = Model::Factory('Company')->getOrgList(); // получить список организаций.
+        $org_tree = Model::Factory('Company')->getOrgList();
+        $fl = $this->session->get('alert');
+        $arrAlert = $this->session->get('arrAlert');
+        
+        $this->session->delete('alert');
+        $this->session->delete('arrAlert');
 
-    $fl = $this->session->get('alert');
-    $arrAlert = $this->session->get('arrAlert');
-    
-    $this->session->delete('alert');
-    $this->session->delete('arrAlert');
-	$doc = new Documents();
-	//echo Debug::vars('478', $doc->getDocById($id = 2));exit;
-    $topbuttonbar = View::factory('order/topbuttonbar', array(
-        'id_pep' => $id_pep,
-        '_is_active' => 'edit',
-    ));
+        $doc = new Documents();
+        $topbuttonbar = View::factory('order/topbuttonbar', array(
+            'id_pep' => $id_pep,
+            '_is_active' => 'edit',
+        ));
 
-   
-    
-    $key = new Keyk();
-	//echo Debug::vars('473', $id_pep);exit;
-    $cardlist = $key->getListByPeople($id_pep, 1);
-	//echo Debug::vars('474', $cardlist);exit;
-	$user = new User();
-	//$id_user = $user -> id_pep;
-	if ($user->id_role == 1) {
-		if ($mode == 'guest_mode') {
-            $mode = 'buro';
+        $key = new Keyk();
+        $cardlist = $key->getListByPeople($id_pep, 1);
+        $user = new User();
+
+        if ($user->id_role == 1 || $user->id_role == 2) {
+            if ($mode == 'guest_mode') {
+                $mode = 'buro';
+            }
         }
-	}
-	//echo Debug::vars('485', $mode);exit;
-    $this->template->content = View::factory('order/edit')
-        ->bind('id_pep', $id_pep)
-        ->bind('contact', $contact)
-        ->bind('alert', $fl)
-        ->bind('arrAlert', $arrAlert)
-        ->bind('contact_acl', $contact_acl)
-        ->bind('org_tree', $org_tree)
-        ->bind('force_org', $force_org)
-        ->bind('check_acl', $check_acl)
-        ->bind('companies', $companies)
-        ->bind('cardlist', $cardlist)
-        //->bind('card', $card) // Передаем данные из GUESTORDER как $card
-        ->bind('mode', $mode)
-        ->bind('topbuttonbar', $topbuttonbar)
-        ->bind('surname', $surname)
-        ->bind('', $timeend)
-        ->bind('', $timestart)
-		->bind('guest', $guest);
-}
+        
+        $buro = new Buro();
+        $buro_accesses = array();
+        $selected_access = '';
+        if ($user->id_role == 2 && !is_null($user->id_buro)) {
+            $access_ids = Arr::pluck($buro->getBuroAccesses($user->id_buro), 'id_accessname');
+            foreach ($access_ids as $access_id) {
+                $access_data = $buro->getAccessById($access_id);
+                if (!empty($access_data)) {
+                    $buro_accesses[] = $access_data;
+                }
+            }
+            $selected_access = $buro->getAccessUserByIdPep($id_pep);
+        }
 
+        $this->template->content = View::factory('order/edit')
+            ->bind('id_pep', $id_pep)
+            ->bind('contact', $contact)
+            ->bind('alert', $fl)
+            ->bind('arrAlert', $arrAlert)
+            ->bind('contact_acl', $contact_acl)
+            ->bind('org_tree', $org_tree)
+            ->bind('force_org', $force_org)
+            ->bind('check_acl', $check_acl)
+            ->bind('companies', $companies)
+            ->bind('cardlist', $cardlist)
+            ->bind('mode', $mode)
+            ->bind('topbuttonbar', $topbuttonbar)
+            ->bind('surname', $surname)
+            ->bind('timeend', $timeend)
+            ->bind('timestart', $timestart)
+            ->bind('guest', $guest)
+            ->bind('buro_accesses', $buro_accesses)
+            ->bind('selected_access', $selected_access)
+            ->bind('user', $user);
+    }
 	public function _action__view()
 	{
 		$id=$this->request->param('id');
@@ -1127,16 +1148,16 @@ public function action_settings() {
         ->set('people', $peopleWithBuro);
 }
 
-	public function action_buro_details()
+public function action_buro_details()
 {
     $id_buro = $this->request->param('id');
     
     $buro = new Buro();
     $users = $buro->getUsersByIdBuro($id_buro);  
     $buroInfo = $buro->getBuroById($id_buro); 
-	$peoplee = new Guest2();  
+    $peoplee = new Guest2();  
 
-	$people = [];
+    $people = [];
     $roles = [];
     
     foreach ($users as $user) {
@@ -1151,15 +1172,18 @@ public function action_settings() {
         }
     }
     
+    $access_names = $buro->getAccessName();
+    $current_accesses = Arr::pluck($buro->getBuroAccesses($id_buro), 'id_accessname');
+    
     $data = [
-        'buro' => isset($buroInfo[0]) ? $buroInfo[0] : null, 
+        'buro' => isset($buroInfo[0]) ? $buroInfo[0] : null,
         'users' => $users,
-		'people' => $people,
-        'roles' => $roles
+        'people' => $people,
+        'roles' => $roles,
+        'access_names' => $access_names,
+        'current_accesses' => $current_accesses 
     ];
 
-	//echo Debug::vars('1127', $data);exit;
-    
     $this->template->content = View::factory('order/buro_details', $data);
 }
 
@@ -1426,6 +1450,31 @@ public function action_PersonalData()
 
         $this->response->body(json_encode(['status' => 'success', 'message' => 'Подпись сохранена', 'file' => $filename]));
     }
+
+	public function action_addAccessBuro()
+{
+    $id_buro = $this->request->param('id');
+    $post = $this->request->post();
+    
+    if (!isset($post['access_names']) || empty($post['access_names'])) {
+        Session::instance()->set('flash_error', 'Пожалуйста, выберите хотя бы одну зону доступа');
+        HTTP::redirect('order/buro_details/' . $id_buro);
+    }
+    
+    $buro = new Buro();
+    $access_ids = $post['access_names'];
+    
+    $buro->addAccessBuro($id_buro, $access_ids);
+    
+    Session::instance()->set('flash_success', 'Зоны доступа успешно обновлены');
+    HTTP::redirect('order/buro_details/' . $id_buro);
+}
+
+
+
+
+
+
 
 }
 	

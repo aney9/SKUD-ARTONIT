@@ -26,10 +26,7 @@
                     <?php echo Form::submit('submit', 'Обновить'); ?>
                 <?php echo Form::close(); ?>
             </fieldset>
-            
-            <div style="margin-top: 20px;">
-                <?php echo Form::open('order/UpdateBuro/'.$buro['id']); ?>
-                    <?php echo Form::submit('add', 'Добавить в бюро'); ?>
+            <?php echo Form::submit('add', 'Добавить в бюро'); ?>
                 <?php echo Form::close(); ?>
                 
                 <?php echo Form::open('order/delete_buro/'.$buro['id']); ?>
@@ -37,12 +34,10 @@
                         'onclick' => 'return confirm(\'Вы уверены, что хотите удалить это бюро? Все связанные пользователи также будут удалены.\');'
                     )); ?>
                 <?php echo Form::close(); ?>
-            </div>
             
             <h3>Пользователи</h3>
             <?php if (!empty($users)): ?>
                 <?php 
-                // Группируем пользователей по ролям
                 $users_by_role = array();
                 foreach ($users as $user) {
                     $role_id = $user['id_role'];
@@ -100,4 +95,24 @@
             </div>
         <?php endif; ?>
     </div>
+    <div>
+    <?php echo Form::open('order/addAccessBuro/' . $buro['id']); ?>
+        <fieldset>
+            <legend>Доступные зоны</legend>
+            <?php foreach ($access_names as $item): ?>
+                <div style="margin-bottom: 10px;">
+                    <label>
+                        <?php 
+                        // Проверяем, есть ли текущий доступ в списке выбранных
+                        $checked = in_array($item['ID_ACCESSNAME'], $current_accesses) ? true : false;
+                        echo Form::checkbox('access_names[]', $item['ID_ACCESSNAME'], $checked); 
+                        ?>
+                        <?php echo HTML::chars($item['NAME']); ?>
+                    </label>
+                </div>
+            <?php endforeach; ?>
+        </fieldset>
+        <?php echo Form::submit('add', 'Добавить доступы'); ?>
+    <?php echo Form::close(); ?>
+</div>
 </div>
