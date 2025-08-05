@@ -38,6 +38,7 @@ $user = new User();
                     echo $id_pep ? __('guest.titleinArchive') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) : '';
                     break;
                 case 'newguest':
+                case 'neworder':
                     echo '<span>' . __('guest.registration') . '</span>';
                     break;
                 case 'buro':
@@ -62,6 +63,7 @@ $user = new User();
                             case 'guest_mode':
                             case 'archive_mode':
                             case 'buro':
+                            case 'neworder':
                                 include Kohana::find_file('views', 'order/block/personal_data');
                                 break;
                         }
@@ -86,6 +88,11 @@ $user = new User();
                                 }
                                 include Kohana::find_file('views', 'order/block/card_dates');
                                 break;
+                            case 'neworder':
+                                include Kohana::find_file('views', 'order/block/rfid');
+                                echo '<br>';
+                                include Kohana::find_file('views', 'order/block/card_dates');
+                                break;
                             case 'buro':
                                 include Kohana::find_file('views', 'order/block/rfid');
                                 echo '<br>';
@@ -100,9 +107,10 @@ $user = new User();
                             case 'newguest':
                             case 'guest_mode':
                             case 'archive_mode':
+                            case 'neworder':
                             case 'buro':
                                 include Kohana::find_file('views', 'order/block/note');
-                                if ($mode == 'buro' && $user->id_role == 2) {
+                                if (($mode == 'buro' || $mode == 'neworder') && $user->id_role == 2 ) {
                                     echo '<br>';
                                     include Kohana::find_file('views', 'order/block/access_checkboxes');
                                 }
@@ -116,6 +124,34 @@ $user = new User();
             <br />
             <?php
             switch ($mode) {
+                case 'neworder':
+                    if ($user->id_role == 1 || $user->id_role == 2) {
+                        echo Form::hidden('todo', 'savenewwithcard'); 
+                        echo Form::submit('savenewwithcard', __('Добавить гостя'), array(
+                            'onclick' => "this.form.elements.todo.value='savenewwithcard'"
+                        ));
+                        
+                        // $pd = new PD($id_pep);
+                        // $signature_file = $pd->checkSignature($id_pep);
+                        // if ($signature_file === false || !file_exists($signature_file)) {
+                        //     echo Form::submit('consent', __('Согласие'), array(
+                        //         'onclick' => "this.form.elements.todo.value='consent'"
+                        //     ));
+                        // } else {
+                        //     $signature_url = '/Uploads/signatures/' . basename($signature_file);
+                        //     echo '<a href="' . htmlspecialchars($signature_url) . '" target="_blank" class="btn">' . __('Просмотреть подпись') . '</a>';
+                        // }
+                        
+                        if (!empty($cardlist[0]['ID_CARD'])) {
+                            echo Form::submit('forceexit', __('Забрать карту!'), array(
+                                'onclick' => "this.form.elements.todo.value='forceexit'"
+                            ));
+                        }
+                    } else {
+                        echo Form::hidden('todo', 'update');
+                        echo Form::submit('update', __('Обновить гостя'));
+                    }
+                    break;
                 case 'newguest':
                     echo Form::hidden('todo', 'savenew');
                     echo Form::submit('savenew', __('Добавить гостя214'));
@@ -140,7 +176,7 @@ $user = new User();
                                 'onclick' => "this.form.elements.todo.value='consent'"
                             ));
                         } else {
-                            $signature_url = '/Uploads/signatures/' . basename($signature_file);
+                            $signature_url = '/downloads' . basename($signature_file);
                             echo '<a href="' . htmlspecialchars($signature_url) . '" target="_blank" class="btn">' . __('Просмотреть подпись') . '</a>';
                         }
                         
@@ -171,7 +207,7 @@ $user = new User();
                                 'onclick' => "this.form.elements.todo.value='consent'"
                             ));
                         } else {
-                            $signature_url = '/Uploads/signatures/' . basename($signature_file);
+                            $signature_url = '/downloads' . basename($signature_file);
                             echo '<a href="' . htmlspecialchars($signature_url) . '" target="_blank" class="btn">' . __('Просмотреть подпись') . '</a>';
                         }
                         

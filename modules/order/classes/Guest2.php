@@ -808,5 +808,13 @@ public function getPersonDetails($id_pep)
         return [];
     }
 }
+
+public function getLastIdPep(){
+	$sql = 'SELECT max(id_pep) as last_id_pep FROM people';
+	$query = DB::query(Database::SELECT, $sql)
+	->execute(Database::instance('fb'));
+	$result = $query->as_array();
+	return $result;
+}
 	
 }

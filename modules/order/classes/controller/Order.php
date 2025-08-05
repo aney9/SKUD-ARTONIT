@@ -193,8 +193,10 @@ public function action_index($filter = null)
         $arrAlert = $this->session->get('arrAlert');
         $this->session->delete('alert');
         $this->session->delete('arrAlert');
+		$mode = 'neworder';
 
         $this->template->content = View::factory('order/list')
+			->bind('mode', $mode)
             ->bind('people', $list)
             ->bind('alert', $fl)
             ->bind('arrAlert', $arrAlert)
@@ -340,6 +342,123 @@ public function action_index($filter = null)
 			*Если нажата кнопка submit - это отметка о выходе
 			* если нажата кнопка button - это обновление данных о госте, возврат на эту страницу
 			*/
+
+			case 'savenewwithcard':
+				$guest = new Guest2();
+				$id = $guest->getLastIdPep();
+				$id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
+					? (int)$id[0]['LAST_ID_PEP'] 
+					: 0;
+				$id_pep = $id_pe +1;
+				$guest->name = Arr::get($_POST, 'name', '');
+				$guest->patronymic = Arr::get($_POST, 'patronymic', '');
+				$guest->surname = Arr::get($_POST, 'surname', '');
+				
+				$docnum1 = Arr::get($_POST, 'docnum1', '');
+				$docnum2 = Arr::get($_POST, 'docnum2', '');
+				$doc_type = Arr::get($_POST, 'doc_type', '');
+				$guest->numdoc = $docnum1 . '#' . $docnum2 . '@' . $doc_type;
+				$guest->docdate = Arr::get($_POST, 'datedoc', '');
+				$guest->note = Arr::get($_POST, 'note', '');
+				$user = new User();
+					//echo Debug::vars($user);exit;
+					$id_pep_user = $user->id_pep;
+					//echo Debug::vars('366', $id_pep_user);exit;
+					$id_org = $user->id_org;
+					$cardDateStart = isset($_POST['carddatestart']) ? trim($_POST['carddatestart']) : date('d.m.Y');
+					$cardDateEnd = isset($_POST['carddateend']) ? trim($_POST['carddateend']) : date('d.m.Y', strtotime('+1 day'));
+					$timeplan = DateTime::createFromFormat('d.m.Y', $cardDateStart);
+					$timevalid = DateTime::createFromFormat('d.m.Y', $cardDateEnd);
+					if($guest->addGuest() >= 0) { // если гость добавлен успешно (пока без карты), то то формирую запись о заказе гостя
+						//echo Debug::vars($guest);exit;
+						
+						$alert=__('guest.addOK', array(':surname'=>$guest->surname,':name'=>$guest->name,':patronymic'=>$guest->patronymic,':id_pep'=>$guest->id));
+							
+							// присвоение категории доступа по умолчанию для организации Гость.
+							
+							
+							$order=new Order();//формирую ордер (заказ пропуска)
+							
+							//echo Debug::vars($order);exit;
+							$order->id_pep=$id_pep_user;//кто заказал пропуск
+							$order->id_guest=$id_pep;//ссылка на гостя, на которого оформляется заказ
+							//echo Debug::vars('275', $order);exit;
+							//$order->id_guest=$guest->id;//ссылка на гостя, на которого оформляется заказ
+							$order->id_org=$id_org;//в какую организацию должен пойти гость
+							$order->timeorder='\'now\'';//метка времени во сколько сделана заявка
+							$order->timeplan="'" . $timeplan->format('Y-m-d H:i:s') . "'";//во сколько ждем гостя
+							$order->timevalid="'" . $timevalid->format('Y-m-d H:i:s') . "'";;//до какого времени ждем гостя
+							$order->remark=Arr::get($_POST, 'note','');//комментарии (цель визита, например).
+							//echo Debug::vars($order);exit;
+							if($order->add())
+							{
+								
+								//вставка заявки прошла успешно.
+								$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
+									$alert=$alert.'<br>'.  __('guest.addRfidOk', array(':id_card'=>$key->id_card));
+									
+								
+							} else {
+								
+								//вставка заявки прошла с ошибкой.
+								//echo Debug::vars('262 не удалось вставить гостя', $guest->addGuest());exit;
+									$arrAlert[]=array('actionResult'=>2, 'actionDesc'=>'guest.noDocForSave');
+							}
+							if (!empty($idcard)){
+					//echo Debug::vars('382', $idcard);exit;
+					$key=new Keyk($idcard);
+					$check=$key->check(1);
+
+					if(is_null($check)){// если NULL - значит, этой карты не в базе данных, её можно выдавать гостю
+							$key->id_card=$idcard;
+							$key->timestart=Arr::get($_POST, 'carddatestart');
+							$key->timeend=Arr::get($_POST, 'carddateend');
+							$key->id_pep=$guest->id_pep;
+							$key->flag=1;
+							$key->rfidmode=$rfidmode;
+							$id_pep1 = $id_pep;
+							$id_accessname = Arr::get($_POST, 'ACCESS_NAME');
+							if ($id_accessname) {
+        						$guest->setAclDefault($id_pep1, $id_accessname);
+    						}
+							//echo Debug::vars('435', $id_accessname);exit;
+							//echo Debug::vars('433',$id_pep);exit;
+							
+							//присвоедние карты RFID
+							if($key->addRfid()==0) { //сохраняю карту RFID
+									// перемещаю гостя в Гость
+								//$guest->moveToGuest();	
+								$alert=__('guest.addRfidOk', array(':id_card'=>$key->id_card));
+								$this->session->set('mode', 'guest_mode');
+								//throw new Exception($alert, 271);
+							} else {
+							    //$alert=__('guest.addRfidErr', array(':id_card'=>$key->id_card));
+								//$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>$alert);
+								//Session::instance()->set('arrAlert',$arrAlert);
+							    //throw new Exception($alert, 274);
+							}
+							//echo Debug::vars('398', $key);exit;
+				//Session::instance()->set('alert', $alert);
+		
+				} else {
+					//карта выдана сотруднику с id_pep=$check
+					
+					$anypeople=new Guest2($check);
+					
+					//Session::instance()->set('alert', __('contact.key_occuped_'.$check));
+					$alert=__('guest.key_occuped', array(':idcard'=>$idcard, ':id_pep'=>$anypeople->id_pep,':name'=>iconv('CP1251', 'UTF-8',$anypeople->name),':surname'=>iconv('CP1251', 'UTF-8',$anypeople->surname),':patronymic'=>iconv('CP1251', 'UTF-8',$anypeople->patronymic)));
+					
+					$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>$alert);
+					
+					Session::instance()->set('arrAlert',$arrAlert);
+				//throw new Exception($alert, 274);
+				}
+
+			}
+		}
+		$this->redirect('order/edit/0/neworder');
+		break;
+				
 			case 'forceexit':// ручная отметка о выходе
 				
 				//echo Debug::vars('312',$_POST);//exit;
@@ -387,6 +506,8 @@ public function action_index($filter = null)
 			case 'consent':
     			$this->redirect('order/PersonalData/'.$id);
     			break;
+
+
 			
 			case 'reissue':// выдача карты уже известному гостю + обновление данных о госте
 				//проверка что карта не выдана какому-нибудь гостю
@@ -1406,7 +1527,7 @@ public function action_PersonalData()
         $signature_data = str_replace(' ', '+', $signature_data);
         $image = base64_decode($signature_data);
 
-        $upload_dir = DOCROOT . 'Uploads';
+        $upload_dir = DOCROOT . 'downloads';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0777, true);
         }

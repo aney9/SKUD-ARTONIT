@@ -39,6 +39,8 @@ if ($alert) { ?>
     </div>
     <br class="clear"/>
     <div class="content">
+        <button style="margin-left: 500px;" onclick="window.location.href='order/edit/0/neworder'">Добавить гостя</button>
+        <br>
         <?php 
         include Kohana::find_file('views', 'paginatoion_controller_template'); 
         if (count($people) > 0) { ?>

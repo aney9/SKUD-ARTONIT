@@ -26,7 +26,9 @@
                     <?php echo Form::submit('submit', 'Обновить'); ?>
                 <?php echo Form::close(); ?>
             </fieldset>
-            <?php echo Form::submit('add', 'Добавить в бюро'); ?>
+            <?php echo Form::submit('add', 'Добавить в бюро', [
+    'onclick' => "window.location.href = '/order/UpdateBuro/{$buro['id']}'; return false;"
+]);?>
                 <?php echo Form::close(); ?>
                 
                 <?php echo Form::open('order/delete_buro/'.$buro['id']); ?>
@@ -47,7 +49,6 @@
                     $users_by_role[$role_id][] = $user;
                 }
                 
-                // Выводим таблицы для каждой роли
                 foreach ($users_by_role as $role_id => $role_users): 
                     $role_info = isset($roles[$role_id][0]) ? $roles[$role_id][0] : null;
                 ?>
@@ -103,7 +104,6 @@
                 <div style="margin-bottom: 10px;">
                     <label>
                         <?php 
-                        // Проверяем, есть ли текущий доступ в списке выбранных
                         $checked = in_array($item['ID_ACCESSNAME'], $current_accesses) ? true : false;
                         echo Form::checkbox('access_names[]', $item['ID_ACCESSNAME'], $checked); 
                         ?>
