@@ -127,16 +127,21 @@ class Buro
         return $query->as_array();
     }
 
-    public function getIdBuroForUser($id_pep)
-    {
-        $sql = 'SELECT buc.id, buc.id_pep, buc.id_buro, buc.id_role
-                FROM bu_conf buc
-                WHERE buc.id_pep = :id_pep';
-        $query = DB::query(Database::SELECT, $sql)
-            ->param(':id_pep', $id_pep)
-            ->execute(Database::instance($this->base_po));
-        return $query->as_array();
-    }
+public function getIdBuroForUser($id_pep)
+{
+    $sql = 'SELECT 
+                buc.id_buro,
+                buc.id_role,  
+                bb.name as buro_name
+            FROM bu_conf buc
+            JOIN bu_buro bb ON buc.id_buro = bb.id
+            WHERE buc.id_pep = :id_pep';
+    
+    return DB::query(Database::SELECT, $sql)
+        ->param(':id_pep', $id_pep)
+        ->execute(Database::instance($this->base_po))
+        ->as_array();
+}
 
     public function getBuroById($id_buro)
     {
@@ -372,6 +377,42 @@ class Buro
         
         return !empty($result) ? $result[0]['ID_ACCESSNAME'] : '';
     }
+
+    public function addGuestToBuro($id_pep, $id_buro)
+{
+    DB::insert('bu_guest', array('id_pep', 'id_buro'))
+       ->values(array($id_pep, $id_buro))
+       ->execute(Database::instance($this->base_po));
+}
+
+public function getGuestBuro($id_pep)
+{
+    $sql = 'SELECT 
+                bg.id_buro,
+                bb.name as buro_name
+            FROM bu_guest bg
+            JOIN bu_buro bb ON bg.id_buro = bb.id
+            WHERE bg.id_pep = :id_pep
+            LIMIT 1';
+    
+    return DB::query(Database::SELECT, $sql)
+        ->param(':id_pep', $id_pep)
+        ->execute(Database::instance($this->base_po))
+        ->as_array();
+}
+
+public function getCountBuro($id_pep) {
+    $sql = 'SELECT COUNT(*) as count_buro
+            FROM bu_conf buc 
+            WHERE buc.id_pep = :id_pep';
+    
+    $result = DB::query(Database::SELECT, $sql)
+        ->param(':id_pep', $id_pep)  // Параметризованный запрос для безопасности
+        ->execute(Database::instance($this->base_po))
+        ->as_array();
+    
+    return isset($result[0]['count_buro']) ? (int)$result[0]['count_buro'] : 0;
+}
 
     
 }

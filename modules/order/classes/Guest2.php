@@ -816,5 +816,48 @@ public function getLastIdPep(){
 	$result = $query->as_array();
 	return $result;
 }
-	
+
+public function getOrderByIdpep($id_pep){
+	$sql = 'SELECT * FROM GUESTORDER
+	where id_guest='.$id_pep;
+	$query = DB::query(Database::SELECT, $sql)
+	->execute(Database::instance('fb'));
+	$result = $query->as_array();
+	return $result;
+}
+
+public function updateOrder($id_pep, $id_guest, $id_org) {
+        // Генерация нового ID для GUESTORDER
+        $id = DB::query(Database::SELECT,
+              'SELECT gen_id(GEN_GUESTORDER_ID, 1) FROM rdb$database')
+              ->execute(Database::instance('fb'))
+              ->get('GEN_ID');
+
+        // Текущее время в формате Firebird
+        $currentTime = date('Y-m-d H:i:s');
+        $timeValid = date('Y-m-d H:i:s', strtotime('+1 day'));
+
+        // Используем явный SQL с правильной обработкой NULL
+        $sql = "INSERT INTO GUESTORDER 
+                (ID_GUESTORDER, ID_DB, ID_PEP, ID_PEPORDER, ID_GUEST, ID_ORG, 
+                 TIMEORDER, TIMEVISIT, TIMESANCTION, TIMEPLAN, TIMEVALID, REMARK) 
+                VALUES 
+                ($id, 1, $id_pep, NULL, $id_guest, $id_org, 
+                 '$currentTime', NULL, NULL, '$currentTime', '$timeValid', NULL)";
+
+        // Выполняем вставку заказа
+        DB::query(Database::INSERT, $sql)
+            ->execute(Database::instance('fb'));
+
+        // Обновляем таблицу people
+        $updatePeopleSql = "UPDATE people SET id_org = 2 WHERE id_pep = $id_guest";
+        DB::query(Database::UPDATE, $updatePeopleSql)
+            ->execute(Database::instance('fb'));
+
+		//echo Debug::vars('857', $updatePeopleSql);exit;
+
+        $this->actionResult = 0;
+        return 0;
+
+}
 }

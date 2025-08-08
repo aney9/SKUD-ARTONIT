@@ -30,7 +30,41 @@ class Model_Order extends Model
 	*/
 	
 public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_filter = '')
-    {
+{
+    $sql = 'SELECT 
+        gu.id_guestorder, 
+        g."ID_PEP" AS id_guest, 
+        g."SURNAME" AS guest_surname, 
+        g."NAME" AS guest_name, 
+        g."PATRONYMIC" AS guest_patronymic, 
+        o.id_org, 
+        o."NAME" AS org_name, 
+        p."SURNAME" AS p_surname, 
+        gu.timeplan,
+        gu.timeorder,
+        p."ID_PEP" as id_pep,
+        c_g.id_card AS guest_card_number,
+        c_g."CREATEDAT" as createdat
+    FROM guestorder gu 
+    JOIN people g ON gu.id_guest = g.id_pep 
+    JOIN organization o ON gu.id_org = o.id_org
+    JOIN people p ON gu.id_pep = p.id_pep  
+    LEFT JOIN card c_g ON g.id_pep = c_g.id_pep 
+    WHERE ';
+
+    if ($user_role == 1) {
+        $sql .= '1=1'; 
+    } elseif ($user_role == 2) {
+        $sql .= $buro_filter ? $buro_filter : '1=0';
+    } else {
+        $sql .= 'gu.id_pep = :id_pep'; 
+    }
+
+    if ($mode === 'guest_mode') {
+        $sql .= ' AND CAST(gu.timeplan AS DATE) >= CURRENT_DATE';
+        $sql .= ' AND g.id_org = 2'; 
+        $sql .= ' ORDER BY gu.timeplan ASC';
+    } elseif ($mode === 'archive_mode') {
         $sql = 'SELECT 
             gu.id_guestorder, 
             g."ID_PEP" AS id_guest, 
@@ -45,53 +79,43 @@ public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_
             p."ID_PEP" as id_pep,
             c_g.id_card AS guest_card_number,
             c_g."CREATEDAT" as createdat
-        FROM guestorder gu 
-        JOIN people g ON gu.id_guest = g.id_pep 
+        FROM guestorder gu
+        JOIN people g ON gu.id_guest = g.id_pep
         JOIN organization o ON gu.id_org = o.id_org
-        JOIN people p ON gu.id_pep = p.id_pep  
-        LEFT JOIN card c_g ON g.id_pep = c_g.id_pep 
-        WHERE ';
-
-        if ($user_role == 1) {
-            $sql .= '1=1'; 
-        } elseif ($user_role == 2) {
-            $sql .= $buro_filter ? $buro_filter : '1=0';
-        } else {
-            $sql .= 'gu.id_pep = :id_pep'; 
-        }
-
-        if ($mode === 'guest_mode') {
-            $sql .= ' AND CAST(gu.timeplan AS DATE) >= CURRENT_DATE';
-            $sql .= ' ORDER BY gu.timeplan ASC';
-        } elseif ($mode === 'archive_mode') {
-            $sql .= ' AND CAST(gu.timeplan AS DATE) < CURRENT_DATE';
-            $sql .= ' ORDER BY gu.timeplan DESC';
-        }
-
-        Log::instance()->add(Log::DEBUG, 'SQL query: ' . $sql);
-
-        try {
-            $query = DB::query(Database::SELECT, $sql);
-            if ($user_role != 1 && $user_role != 2) {
-                $query->param(':id_pep', $id_pep);
-            }
-            $result = $query->execute(Database::instance('fb'))->as_array();
-            if (empty($result)) {
-                Log::instance()->add(Log::DEBUG, 'No records found, result is empty');
-            } else {
-                Log::instance()->add(Log::DEBUG, 'Result structure: ' . print_r(array_keys($result[0]), true));
-                $timeplans = array_map(function($row) {
-                    return isset($row['timeplan']) ? $row['timeplan'] : 'NULL';
-                }, $result);
-                Log::instance()->add(Log::DEBUG, 'Timeplan values: ' . implode(', ', $timeplans));
-            }
-            return $result;
-        } catch (Exception $e) {
-            Log::instance()->add(Log::ERROR, 'Database error: ' . $e->getMessage());
-            return array();
-        }
+        JOIN people p ON gu.id_pep = p.id_pep
+        LEFT JOIN card c_g ON g.id_pep = c_g.id_pep
+        WHERE gu.id_guestorder IN (
+            SELECT MAX(g2.id_guestorder)
+            FROM guestorder g2
+            JOIN people p2 ON g2.id_guest = p2.id_pep
+            WHERE ' . ($user_role == 1 ? '1=1' : ($user_role == 2 ? ($buro_filter ?: '1=0') : 'g2.id_pep = :id_pep')) . '
+            AND CAST(g2.timeplan AS DATE) <= CURRENT_DATE
+            AND p2.id_org = 3
+            GROUP BY g2.id_guest
+        )
+        ORDER BY gu.timeorder DESC';
     }
 
+    Log::instance()->add(Log::DEBUG, 'SQL query: ' . $sql);
+
+    try {
+        $query = DB::query(Database::SELECT, $sql);
+        if ($user_role != 1 && $user_role != 2) {
+            $query->param(':id_pep', $id_pep);
+        }
+        $result = $query->execute(Database::instance('fb'))->as_array();
+        
+        if (empty($result)) {
+            Log::instance()->add(Log::DEBUG, 'No records found, result is empty');
+        } else {
+            Log::instance()->add(Log::DEBUG, 'Result structure: ' . print_r(array_keys($result[0]), true));
+        }
+        return $result;
+    } catch (Exception $e) {
+        Log::instance()->add(Log::ERROR, 'Database error: ' . $e->getMessage());
+        return array();
+    }
+}
 
 	
 	

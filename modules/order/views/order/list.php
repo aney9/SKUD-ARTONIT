@@ -17,11 +17,11 @@ if ($alert) { ?>
 
 <div class="onecolumn">
     <div class="header">
-        <div id="search"<?php if (isset($hidesearch)) echo ' style="display: none;"'; ?>>
+        <!-- <div id="search"<?php //if (isset($hidesearch)) echo ' style="display: none;"'; ?>>
             <form action="passoffices/search" method="post">
-                <input type="text" class="search noshadow" title="<?php echo __('search'); ?>" name="q" id="q" value="<?php if (isset($filter)) echo $filter; ?>" />
+                <input type="text" class="search noshadow" title="<?php //echo __('search'); ?>" name="q" id="q" value="<?php if (isset($filter)) echo $filter; ?>" />
             </form>
-        </div>
+        </div> -->
         
         <?php 
         switch (Session::instance()->get('mode')) {
@@ -39,8 +39,10 @@ if ($alert) { ?>
     </div>
     <br class="clear"/>
     <div class="content">
+        <?php if ($user->id_role == 1 || $user->id_role == 2): ?>
         <button style="margin-left: 500px;" onclick="window.location.href='order/edit/0/neworder'">Добавить гостя</button>
         <br>
+        <?php endif;?>
         <?php 
         include Kohana::find_file('views', 'paginatoion_controller_template'); 
         if (count($people) > 0) { ?>
@@ -110,11 +112,10 @@ if ($alert) { ?>
                         <td>
                             <?php 
                             $buro = new Buro();
-                            $userBuro = $buro->getIdBuroForUser($pep['ID_PEP']);
+                            $guestBuro = $buro->getGuestBuro($pep['ID_GUEST']); // Используем ID гостя
                             
-                            if (!empty($userBuro)) {
-                                $buroInfo = $buro->getBuroById($userBuro[0]['id_buro']);
-                                echo isset($buroInfo[0]['name']) ? HTML::chars($buroInfo[0]['name']) : 'Не указано';
+                            if (!empty($guestBuro)) {
+                                echo HTML::chars($guestBuro[0]['buro_name']);
                             } else {
                                 echo 'Не указано';
                             }

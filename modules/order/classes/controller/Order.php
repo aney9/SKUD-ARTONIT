@@ -148,61 +148,72 @@ class Controller_Order extends Controller_Template
 	*режим работы (гость или архив) заданы в this и в сессии)
 	*/
 public function action_index($filter = null)
-    {
-        $po = Model::factory('Order');
-        $mode = Session::instance()->get('mode');
-        $user = new User();
-        $id_pep = $user->id_pep;
-        $user_role = $user->id_role;
-        $id_buro = $user->id_buro;
+{
+    $po = Model::factory('Order');
+    $mode = Session::instance()->get('mode');
+    $user = new User();
+    $id_pep = $user->id_pep;
+    $user_role = $user->id_role;
 
-        $buro = new Buro();
-        $buro_filter = '';
+    $buro = new Buro();
+    $buro_filter = '';
 
-		$access_names = [];
-    	$current_accesses = [];
+    // Получаем все бюро пользователя
+    $user_buros = $buro->getIdBuroForUser($id_pep);
+	//echo Debug::vars('163', $user_buros);exit;
+    $access_names = [];
+    $current_accesses = [];
 
-        if ($user_role == 2 && !is_null($id_buro)) {
-            $users = $buro->getUsersByBuroId($id_buro);
-			$access_names = $buro->getAccessName();
-			$current_accesses = Arr::pluck($buro->getBuroAccesses($id_buro), 'id_accessname');
-
-            if (!in_array($id_pep, $users)) {
-                $users[] = $id_pep;
-            }
-            Log::instance()->add(Log::DEBUG, 'Users for id_buro ' . $id_buro . ' before filter: ' . implode(',', $users));
-            if (!empty($users)) {
-                $users = array_map('intval', $users); 
-                $buro_filter = '(p."ID_PEP" IN (' . implode(',', $users) . ') OR g."ID_PEP" IN (' . implode(',', $users) . '))';
-            } else {
-                $buro_filter = '1=0'; 
-            }
-            Log::instance()->add(Log::DEBUG, 'Buro filter for id_buro ' . $id_buro . ': ' . $buro_filter);
+    if ($user_role == 2 && !empty($user_buros)) {
+        // Собираем всех пользователей из всех бюро пользователя
+        $all_users = [];
+        foreach ($user_buros as $user_buro) {
+            $buro_users = $buro->getUsersByBuroId($user_buro['id_buro']);
+            $all_users = array_merge($all_users, $buro_users);
         }
-
-        $list = $po->getListNowOrder($id_pep, $mode, $user_role, $buro_filter);
-
-        Log::instance()->add(Log::DEBUG, 'User role: ' . (!is_null($user_role) ? $user_role : 'null'));
-        Log::instance()->add(Log::DEBUG, 'Buro ID: ' . (!is_null($id_buro) ? $id_buro : 'null'));
-        Log::instance()->add(Log::DEBUG, 'Records found: ' . count($list));
-        if (!empty($list)) {
-            Log::instance()->add(Log::DEBUG, 'Sample records: ' . print_r(array_slice($list, 0, 2), true));
+        
+        // Добавляем текущего пользователя и убираем дубликаты
+        $all_users[] = $id_pep;
+        $all_users = array_unique($all_users);
+        
+        // Получаем доступы для всех бюро пользователя
+        foreach ($user_buros as $user_buro) {
+            $accesses = $buro->getBuroAccesses($user_buro['id_buro']);
+            $current_accesses = array_merge($current_accesses, Arr::pluck($accesses, 'id_accessname'));
         }
+        $current_accesses = array_unique($current_accesses);
+        
+        $access_names = $buro->getAccessName();
 
-        $fl = $this->session->get('alert');
-        $arrAlert = $this->session->get('arrAlert');
-        $this->session->delete('alert');
-        $this->session->delete('arrAlert');
-		$mode = 'neworder';
-
-        $this->template->content = View::factory('order/list')
-			->bind('mode', $mode)
-            ->bind('people', $list)
-            ->bind('alert', $fl)
-            ->bind('arrAlert', $arrAlert)
-            ->bind('filter', $filter)
-            ->bind('pagination', $pagination);
+        if (!empty($all_users)) {
+            $all_users = array_map('intval', $all_users); 
+            $buro_filter = '(p."ID_PEP" IN (' . implode(',', $all_users) . ') OR g."ID_PEP" IN (' . implode(',', $all_users) . '))';
+        } else {
+            $buro_filter = '1=0'; 
+        }
     }
+
+    $list = $po->getListNowOrder($id_pep, $mode, $user_role, $buro_filter);
+	//echo Debug::vars('197', $list);exit;
+
+    $fl = $this->session->get('alert');
+    $arrAlert = $this->session->get('arrAlert');
+    $this->session->delete('alert');
+    $this->session->delete('arrAlert');
+    $mode = 'neworder';
+
+	$user = new User();
+	//echo Debug::vars('204', $user);exit;
+
+    $this->template->content = View::factory('order/list')
+        ->bind('mode', $mode)
+        ->bind('people', $list)
+        ->bind('alert', $fl)
+        ->bind('arrAlert', $arrAlert)
+        ->bind('filter', $filter)
+		->bind('user', $user)
+        ->bind('pagination', $pagination);
+}
 	/*
 	обработка POST-запросов
 	11.11.2023 сохранение информации по гостю.
@@ -291,11 +302,18 @@ public function action_index($filter = null)
 					$timevalid = DateTime::createFromFormat('d.m.Y', $cardDateEnd);
 					if($guest->addGuest() >= 0) { // если гость добавлен успешно (пока без карты), то то формирую запись о заказе гостя
 						//echo Debug::vars($guest);exit;
+
+						
 						
 						$alert=__('guest.addOK', array(':surname'=>$guest->surname,':name'=>$guest->name,':patronymic'=>$guest->patronymic,':id_pep'=>$guest->id));
 							
 							// присвоение категории доступа по умолчанию для организации Гость.
-							
+							if($id_buro = Arr::get($_POST, 'selected_buro')) {
+							$buro = new Buro();
+							if(!$buro->addGuestToBuro($guest->id_pep, $id_buro)) {
+								Kohana::$log->add(Log::WARNING, "Added guest but failed to add to bu_guest");
+							}
+						}
 							
 							$order=new Order();//формирую ордер (заказ пропуска)
 							
@@ -458,7 +476,38 @@ public function action_index($filter = null)
 		}
 		$this->redirect('order/edit/0/neworder');
 		break;
-				
+
+
+
+			//06.08.2025
+			//Данный кейс нужен для создания повторной заявки из архива
+			case 'newguestorder':
+				$guest=new Guest2(Arr::get($_POST,'id_pep', 0));
+				$id_guest = $guest->id_pep;
+				//$org = '3';
+				//$org = $guest->id_org=Arr::get ($_POST, 'id_org','');
+				//$name = $guest->name=Arr::get($_POST, 'name','');
+				$get = $guest->getOrderByIdpep($id_guest);
+				$id_pep = $get[0]['ID_PEP'];
+				$id_org = $get[0]['ID_ORG'];
+				//echo Debug::vars('Привет');exit;
+				//echo Debug::vars('475', $guest->updateOrder($id_pep, $id_guest, $id_org));exit;
+				if($guest->updateOrder($id_pep, $id_guest, $id_org))
+							{
+								
+								
+									//echo Debug::vars('Привет');exit;
+								
+							} else {
+								
+								//вставка заявки прошла с ошибкой.
+								//echo Debug::vars('262 не удалось вставить гостя', $guest->addGuest());exit;
+									$arrAlert[]=array('actionResult'=>2, 'actionDesc'=>'guest.noDocForSave');
+							}
+				$this->redirect('order/guest');
+				break;
+
+
 			case 'forceexit':// ручная отметка о выходе
 				
 				//echo Debug::vars('312',$_POST);//exit;
@@ -513,8 +562,9 @@ public function action_index($filter = null)
 				//проверка что карта не выдана какому-нибудь гостю
 				//echo Debug::vars('366', $idcard, $_POST);exit;
 
-
+				
 				$guest=new Guest2(Arr::get($_POST,'id_pep', 0));
+				//echo Debug::vars('527', $guest);exit;
 				$guest->name=Arr::get($_POST, 'name','');
 				$guest->patronymic=Arr::get($_POST, 'patronymic','');
 				$guest->surname=Arr::get($_POST, 'surname','');
@@ -602,6 +652,7 @@ public function action_index($filter = null)
 			
 		//$this->redirect('order');
 		// $this->redirect('order/edit/' . $id);
+		$this->redirect('order/guest');
 	}
 
 	
@@ -656,6 +707,10 @@ public function action_index($filter = null)
             }
             $selected_access = $buro->getAccessUserByIdPep($id_pep);
         }
+		$user = new User();
+		$id_pepp = $user->id_pep;
+		$buro_list = $buro->getIdBuroForUser($id_pepp);
+		//echo Debug::vars('691', $buro_list);exit;
 
         $this->template->content = View::factory('order/edit')
             ->bind('id_pep', $id_pep)
@@ -676,6 +731,7 @@ public function action_index($filter = null)
             ->bind('guest', $guest)
             ->bind('buro_accesses', $buro_accesses)
             ->bind('selected_access', $selected_access)
+			->bind('buro_list', $buro_list)
             ->bind('user', $user);
     }
 	public function _action__view()

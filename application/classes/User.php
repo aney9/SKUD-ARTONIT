@@ -15,6 +15,7 @@ class User
     public $flag;
     public $bp;
     public $id_role;
+    public $count_buro;
     
     public function __construct($default = array())
     {
@@ -38,6 +39,8 @@ class User
         $this->id_buro = Buro::getUserBuroId($this->id_pep);
         
         $this->bp = $this->getBuroNameForUser();
+        $buro = new Buro();
+        $this->count_buro = $buro->getCountBuro($this->id_pep);
     }
     
     /**

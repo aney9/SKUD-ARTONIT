@@ -74,6 +74,7 @@ $user = new User();
                         switch ($mode) {
                             case 'newguest':
                                 include Kohana::find_file('views', 'order/block/card_dates');
+                                include Kohana::find_file('views', 'order/block/selectBuro');
                                 break;
                             case 'guest_mode':  
                                 if ($user->id_role == 1) {
@@ -188,11 +189,17 @@ $user = new User();
                     }
                     break;
                 case 'archive_mode':
-                    if ($user->id_role == 1) {
+                    if ($user->id_role == 1 || $user->id_role == 2) {
                         echo Form::hidden('todo', 'forceexit');
                         echo Form::submit('forceexit', __('Забрать карту!133'));
                     }
+                    else if($user->id_role == 1 || $user->id_role == 2 || $user->id_role == 3)
+                        echo Form::hidden('todo', 'newguestorder');
+                        echo Form::submit('newguestorder', __('Создать новую заявку'), array(
+                                'onclick' => "this.form.elements.todo.value='newguestorder'"
+                            ));
                     break;
+
                 case 'buro':
                     if ($user->id_role == 1 || $user->id_role == 2) {
                         echo Form::hidden('todo', 'reissue'); 
