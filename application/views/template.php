@@ -100,7 +100,7 @@
 			
 			<div id="content">
 				<div class="inner">
-					<?php 
+					<?php 	
 					//include Kohana::find_file('views/','alert');
 					echo $content;
 

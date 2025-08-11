@@ -190,10 +190,16 @@ $user = new User();
                     break;
                 case 'archive_mode':
                     if ($user->id_role == 1 || $user->id_role == 2) {
+                        if (!empty($cardlist[0]['ID_CARD'])) {
                         echo Form::hidden('todo', 'forceexit');
                         echo Form::submit('forceexit', __('Забрать карту!133'));
+                        }
+                        echo Form::hidden('todo', 'newguestorder');
+                        echo Form::submit('newguestorder', __('Создать новую заявку222'), array(
+                                'onclick' => "this.form.elements.todo.value='newguestorder'"
+                            ));
                     }
-                    else if($user->id_role == 1 || $user->id_role == 2 || $user->id_role == 3)
+                    elseif($user->id_role == 2 || $user->id_role == 3)
                         echo Form::hidden('todo', 'newguestorder');
                         echo Form::submit('newguestorder', __('Создать новую заявку'), array(
                                 'onclick' => "this.form.elements.todo.value='newguestorder'"

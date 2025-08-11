@@ -61,7 +61,7 @@ class constants
 	//условия валидации ФИО.  pattern="2-[0-9]{3}-[0-9]{3}"
 	const FIO_VALID = '^[a-zA-Zа-яА-ЯЁё0-9\s№*]+$';	
 	const IP_VALID = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';	
-	const HEX8_VALID = '^[0-9ABCDEF]{'.constants::RFID_MIN_LENGTH.','.constants::RFID_MAX_LENGTH.'}$';	
+	const HEX8_VALID = '[0-9A-F]{'.constants::RFID_MIN_LENGTH.','.constants::RFID_MAX_LENGTH.'}';
 	const DEC10_VALID = '^[0-9]+$';	
 	const HEX001A_VALID = '[0-9ABCDEF]{6}001A$';	
 		

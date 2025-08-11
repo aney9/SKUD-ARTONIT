@@ -3,9 +3,20 @@
     <div>
         <label for="surname"><?php echo __('contact.surname'); ?></label>
         <br />
-        <input type="text" size="50" name="surname" id="surname" value="<?php echo htmlspecialchars($guest->surname); ?>" />
+        <input 
+            type="text" 
+            size="50" 
+            name="surname" 
+            id="surname" 
+            value="<?php echo htmlspecialchars($guest->surname); ?>" 
+            required
+            maxlength="50"
+            oninvalid="this.setCustomValidity('Пожалуйста, введите фамилию')"
+            oninput="this.setCustomValidity('')"
+        />
         <br />
-        <span class="error" id="error1" style="color: red; display: none;"><?php echo __('contact.emptysurname'); ?></span>
+        <span class="error" id="error1" style="color: red; display: none;">
+            <?php echo __('contact.emptysurname'); ?></span>
     </div>
     <br />
     <div>
@@ -14,12 +25,39 @@
                 <td>
                     <label for="name"><?php echo __('contact.name'); ?></label>
                     <br />
-                    <input type="text" size="50" name="name" id="name" value="<?php echo htmlspecialchars($guest->name); ?>" style="width: 150px" />
+                    <input 
+                        type="text" 
+                        size="50" 
+                        name="name" 
+                        id="name" 
+                        value="<?php echo htmlspecialchars($guest->name); ?>" 
+                        required
+                        maxlength="50"
+                        oninvalid="this.setCustomValidity('Пожалуйста, введите имя')"
+                        oninput="this.setCustomValidity('')"
+                        style="width: 150px"
+                    />
+                    <br />
+                    <span class="error" id="error_name" style="color: red; display: none;">
+                        <?php echo __('Имя обязательно и не должно превышать 50 символов'); ?>
+                    </span>
                 </td>
                 <td style="padding-left: 15px">
                     <label for="patronymic"><?php echo __('contact.patronymic'); ?></label>
                     <br />
-                    <input type="text" size="50" name="patronymic" id="patronymic" value="<?php echo htmlspecialchars($guest->patronymic); ?>" style="width: 150px" />
+                    <input 
+                        type="text" 
+                        size="50" 
+                        name="patronymic" 
+                        id="patronymic" 
+                        value="<?php echo htmlspecialchars($guest->patronymic); ?>" 
+                        maxlength="50"
+                        style="width: 150px"
+                    />
+                    <br />
+                    <span class="error" id="error_patronymic" style="color: red; display: none;">
+                        <?php echo __('Отчество не должно превышать 50 символов'); ?>
+                    </span>
                 </td>
             </tr>
         </table>

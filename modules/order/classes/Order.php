@@ -10,7 +10,8 @@ class Order
 	
 	public function __construct($id_order = null)
 	{
-		if(filter_var($id_order, FILTER_VALIDATE_BOOLEAN)){
+		//echo Debug::vars('13', $id_order, is_int((int)$id_order));exit;
+		if(is_int((int)$id_order)){
 			
 		$sql='select p.id_pep
 		,p.id_org
@@ -44,8 +45,9 @@ class Order
 		$this->patronymic=Arr::get($query, 'PATRONYMIC');
 		$this->id_org=Arr::get($query, 'ID_ORG');
 		$this->numdoc=Arr::get($query, 'NUMDOC');
+
 		}
-		
+		echo Debug::vars('50', $this);exit;
 	}
 	
 	/*
@@ -199,5 +201,9 @@ WHERE (ID_PEP = 7607) AND (ID_DB = 1);
             $this->actionResult = 0;
             return 0;
 	}
+
+	// public function getOrdersByIdPep($id){
+	// 	$sql = 'SELECT * FROM '
+	// }
 	
 }

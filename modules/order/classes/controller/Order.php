@@ -484,6 +484,7 @@ public function action_index($filter = null)
 			case 'newguestorder':
 				$guest=new Guest2(Arr::get($_POST,'id_pep', 0));
 				$id_guest = $guest->id_pep;
+				//echo Debug::vars('487', $id_guest);exit;
 				//$org = '3';
 				//$org = $guest->id_org=Arr::get ($_POST, 'id_org','');
 				//$name = $guest->name=Arr::get($_POST, 'name','');
@@ -782,7 +783,9 @@ public function action_index($filter = null)
 	{
 		//echo Debug::vars('372', $_GET, $_POST, $this->request->param('id')); exit;
 		$id=$this->request->param('id');
+		//echo Debug::vars('786', $id);exit;
 		$guest=new Order($id);
+		//echo Debug::vars('788', $guest);exit;
 	
 	
 		$guest->idOrgGuest = $this->idOrgGuest;// указал организацию гостя
