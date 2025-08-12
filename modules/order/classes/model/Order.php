@@ -51,6 +51,7 @@ public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_
         p."SURNAME" AS p_surname, 
         gu.timeplan,
         gu.timeorder,
+		gu.is_active,
         p."ID_PEP" as id_pep,
         c_g.id_card AS guest_card_number,
         c_g."CREATEDAT" as createdat
@@ -68,11 +69,13 @@ public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_
     if ($mode === 'guest_mode') {
         $sql .= ' AND CAST(g2.timeplan AS DATE) >= CURRENT_DATE';
         $sql .= ' AND p2.id_org = 2';
+		$sql .= ' AND gu.is_active = 1';
         $sql .= ' GROUP BY g2.id_guest)';
         $sql .= ' ORDER BY gu.timeplan ASC';
     } elseif ($mode === 'archive_mode') {
         $sql .= ' AND CAST(g2.timeplan AS DATE) <= CURRENT_DATE';
         $sql .= ' AND p2.id_org = 3';
+		$sql .= ' AND ((gu.is_active <> 1) or (gu.is_active is null))';
         $sql .= ' GROUP BY g2.id_guest)';
         $sql .= ' ORDER BY gu.timeorder DESC';
     } else {

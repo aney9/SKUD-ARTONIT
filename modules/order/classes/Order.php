@@ -11,10 +11,10 @@ class Order
 	public function __construct($id_order = null)
 	{
 		//echo Debug::vars('13', $id_order, is_int((int)$id_order));exit;
-		if(is_int((int)$id_order)){
+		if(false){
 			
-		$sql='select p.id_pep
-		,p.id_org
+		$sql='select g.id_guestorder
+		,p.id_db
 		, p.surname
 		, p.name
 		, p.patronymic
@@ -27,7 +27,7 @@ class Order
 		, p.time_stamp
 		, p.tabnum
 		
-		from GUEST p
+		from GUESTORDER g
 
         where p.guest='.$id_pep;
 		
@@ -47,7 +47,7 @@ class Order
 		$this->numdoc=Arr::get($query, 'NUMDOC');
 
 		}
-		echo Debug::vars('50', $this);exit;
+		//echo Debug::vars('50', $this);exit;
 	}
 	
 	/*
@@ -197,6 +197,8 @@ WHERE (ID_PEP = 7607) AND (ID_DB = 1);
                     ':id_guestorder' => $id
                 ))
                 ->execute(Database::instance('fb'));
+
+			//echo Debug::vars('201', $query);exit;
 
             $this->actionResult = 0;
             return 0;

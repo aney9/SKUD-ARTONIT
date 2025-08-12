@@ -10,7 +10,7 @@ if ($flash_error) {
     echo '<div style="color: red; margin-bottom: 10px;">' . htmlspecialchars($flash_error) . '</div>';
 }
 
-include Kohana::find_file('views', 'alert');
+include Kohana::find_file('views', 'alert_line');
 
 $guest = new Guest2($id_pep);
 $id_card = isset($cardlist[0]['ID_CARD']) ? $cardlist[0]['ID_CARD'] : null;

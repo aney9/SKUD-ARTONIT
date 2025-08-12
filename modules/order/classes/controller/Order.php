@@ -158,7 +158,6 @@ public function action_index($filter = null)
     $buro = new Buro();
     $buro_filter = '';
 
-    // Получаем все бюро пользователя
     $user_buros = $buro->getIdBuroForUser($id_pep);
 	//echo Debug::vars('163', $user_buros);exit;
     $access_names = [];
@@ -305,7 +304,7 @@ public function action_index($filter = null)
 
 						
 						
-						$alert=__('guest.addOK', array(':surname'=>$guest->surname,':name'=>$guest->name,':patronymic'=>$guest->patronymic,':id_pep'=>$guest->id));
+							$alert=__('guest.addOK', array(':surname'=>$guest->surname,':name'=>$guest->name,':patronymic'=>$guest->patronymic,':id_pep'=>$guest->id));
 							
 							// присвоение категории доступа по умолчанию для организации Гость.
 							if($id_buro = Arr::get($_POST, 'selected_buro')) {
@@ -328,19 +327,24 @@ public function action_index($filter = null)
 							$order->timevalid="'" . $timevalid->format('Y-m-d H:i:s') . "'";;//до какого времени ждем гостя
 							$order->remark=Arr::get($_POST, 'note','');//комментарии (цель визита, например).
 							//echo Debug::vars($order);exit;
-							if($order->add())
+							//echo Debug::vars('330', $order->add());exit;
+							if($order->add() === 0)
 							{
-								
+								//echo Debug::vars('привет');exit;
 								//вставка заявки прошла успешно.
 								$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
-									$alert=$alert.'<br>'.  __('guest.addRfidOk', array(':id_card'=>$key->id_card));
-									
+								
+								$alert= __('Заявка успешно создана', array());
+								//echo Debug::vars('337');exit;
+								Session::instance()->set('ok_mess', array('result'=>$alert));	
 								
 							} else {
 								
 								//вставка заявки прошла с ошибкой.
 								//echo Debug::vars('262 не удалось вставить гостя', $guest->addGuest());exit;
-									$arrAlert[]=array('actionResult'=>2, 'actionDesc'=>'guest.noDocForSave');
+								$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
+								$alert = __('Ошибка создания заявки', array());
+								Session::instance()->set('e_mess', array('result'=>$alert));
 							}
 							
 							
@@ -353,7 +357,7 @@ public function action_index($filter = null)
 						
 					}
 					//Session::instance()->set('alert', __('contact.key_occuped_NO'));
-					
+				
 				$this->redirect('order/edit/0/newguest');
 			break;
 			/** ручная отметка о выходе либо обновление данных гостя
@@ -411,16 +415,18 @@ public function action_index($filter = null)
 							if($order->add())
 							{
 								
-								//вставка заявки прошла успешно.
 								$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
-									$alert=$alert.'<br>'.  __('guest.addRfidOk', array(':id_card'=>$key->id_card));
+                
+								$alert= __('Заявка успешно создана', array());
+								//echo Debug::vars('337');exit;
+								Session::instance()->set('ok_mess', array('result'=>$alert));
 									
 								
 							} else {
 								
-								//вставка заявки прошла с ошибкой.
-								//echo Debug::vars('262 не удалось вставить гостя', $guest->addGuest());exit;
-									$arrAlert[]=array('actionResult'=>2, 'actionDesc'=>'guest.noDocForSave');
+								$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
+								$alert = __('Ошибка создания заявки', array());
+								Session::instance()->set('e_mess', array('result'=>$alert));
 							}
 							if (!empty($idcard)){
 					//echo Debug::vars('382', $idcard);exit;
@@ -446,14 +452,23 @@ public function action_index($filter = null)
 							if($key->addRfid()==0) { //сохраняю карту RFID
 									// перемещаю гостя в Гость
 								//$guest->moveToGuest();	
-								$alert=__('guest.addRfidOk', array(':id_card'=>$key->id_card));
-								$this->session->set('mode', 'guest_mode');
 								//throw new Exception($alert, 271);
+
+								$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
+                
+								$alert= __('Карта успешно выдана', array());
+								//echo Debug::vars('337');exit;
+								Session::instance()->set('ok_mess', array('result'=>$alert));
+								$this->session->set('mode', 'guest_mode');
 							} else {
 							    //$alert=__('guest.addRfidErr', array(':id_card'=>$key->id_card));
 								//$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>$alert);
 								//Session::instance()->set('arrAlert',$arrAlert);
 							    //throw new Exception($alert, 274);
+
+								$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
+								$alert = __('Ошибка выдачи карты', array());
+								Session::instance()->set('e_mess', array('result'=>$alert));
 							}
 							//echo Debug::vars('398', $key);exit;
 				//Session::instance()->set('alert', $alert);
@@ -496,14 +511,20 @@ public function action_index($filter = null)
 				if($guest->updateOrder($id_pep, $id_guest, $id_org))
 							{
 								
-								
+									$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
+                
+									$alert= __('Заявка успешно обновлена', array());
+									//echo Debug::vars('337');exit;
+									Session::instance()->set('ok_mess', array('result'=>$alert));
 									//echo Debug::vars('Привет');exit;
 								
 							} else {
 								
 								//вставка заявки прошла с ошибкой.
 								//echo Debug::vars('262 не удалось вставить гостя', $guest->addGuest());exit;
-									$arrAlert[]=array('actionResult'=>2, 'actionDesc'=>'guest.noDocForSave');
+									$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
+									$alert = __('Ошибка обновления заявки', array());
+									Session::instance()->set('e_mess', array('result'=>$alert));
 							}
 				$this->redirect('order/guest');
 				break;
@@ -614,8 +635,11 @@ public function action_index($filter = null)
 							if($key->addRfid()==0) { //сохраняю карту RFID
 									// перемещаю гостя в Гость
 								//$guest->moveToGuest();	
-								$alert=__('guest.addRfidOk', array(':id_card'=>$key->id_card));
-								$this->session->set('mode', 'guest_mode');
+								$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
+                
+								$alert= __('Карта успешно выдана', array());
+								//echo Debug::vars('337');exit;
+								Session::instance()->set('ok_mess', array('result'=>$alert));
 								//throw new Exception($alert, 271);
 							} else {
 							    //$alert=__('guest.addRfidErr', array(':id_card'=>$key->id_card));
@@ -632,11 +656,9 @@ public function action_index($filter = null)
 					$anypeople=new Guest2($check);
 					
 					//Session::instance()->set('alert', __('contact.key_occuped_'.$check));
-					$alert=__('guest.key_occuped', array(':idcard'=>$idcard, ':id_pep'=>$anypeople->id_pep,':name'=>iconv('CP1251', 'UTF-8',$anypeople->name),':surname'=>iconv('CP1251', 'UTF-8',$anypeople->surname),':patronymic'=>iconv('CP1251', 'UTF-8',$anypeople->patronymic)));
-					
-					$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>$alert);
-					
-					Session::instance()->set('arrAlert',$arrAlert);
+					$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
+					$alert = __('Ошибка выдачи карты', array());
+					Session::instance()->set('e_mess', array('result'=>$alert));
 				//throw new Exception($alert, 274);
 				}
 			}else{

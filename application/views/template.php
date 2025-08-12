@@ -101,7 +101,7 @@
 			<div id="content">
 				<div class="inner">
 					<?php 	
-					//include Kohana::find_file('views/','alert');
+					//include Kohana::find_file('views','alert_line');
 					echo $content;
 
 //вывод строки статуса					
