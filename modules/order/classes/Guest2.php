@@ -712,6 +712,7 @@ public function getPeopleWithLogin() {
                 p.NAME AS NAME, 
                 p.PATRONYMIC AS PATRONYMIC,
                 p.ID_ORG AS ID_ORG,
+				p.LOGIN AS LOGIN,
                 o.NAME AS ORG_NAME
             FROM people p
             LEFT JOIN organization o ON o.ID_ORG = p.ID_ORG
@@ -731,6 +732,7 @@ public function getPeopleWithLogin() {
             'NAME' => !empty($row['NAME']) ? iconv('CP1251', 'UTF-8', $row['NAME']) : '',
             'PATRONYMIC' => !empty($row['PATRONYMIC']) ? iconv('CP1251', 'UTF-8', $row['PATRONYMIC']) : '',
             'ID_ORG' => $row['ID_ORG'],
+			'LOGIN' => $row['LOGIN'],
             'ORG_NAME' => !empty($row['ORG_NAME']) ? iconv('CP1251', 'UTF-8', $row['ORG_NAME']) : ''
         ];
     }
@@ -860,4 +862,87 @@ public function updateOrder($id_pep, $id_guest, $id_org) {
         return 0;
 
 }
+
+public function getOrg(){
+	$sql = 'SELECT * FROM organization
+	where id_parent = 1';
+	$query = DB::query(Database::SELECT, $sql)
+	->execute(Database::instance('fb'));
+	$result = $query->as_array();
+	return $result;
+}
+
+
+        public function getEvents($id_pep) {
+        
+		$sql = 'SELECT
+                e.ID_EVENT,
+                e.ID_EVENTTYPE,
+                e.DATETIME,
+                e.ESS1,
+                e.NOTE,
+                e.ID_CARD,
+                e.ID_DEV,
+                d.NAME AS DEVICE_NAME,
+                et.NAME,
+                CASE
+                    WHEN (e.ID_EVENTTYPE = 40 AND e.NOTE = \'add_accessname\') THEN (SELECT '. iconv('UTF-8', 'CP1251', '\'Добавлена категория доступа \'').' || an.name FROM accessname an WHERE an.id_accessname = e.ESS2)
+                    WHEN (e.ID_EVENTTYPE = 40 AND e.NOTE = \'del_accessname\') THEN (SELECT '. iconv('UTF-8','CP1251', '\'Удалена категория доступа \'').'  || an.name FROM accessname an WHERE an.id_accessname = e.ESS2)
+                    WHEN (e.ID_EVENTTYPE = 40 AND e.NOTE = \'change_org\') THEN (SELECT '. iconv('UTF-8', 'CP1251',  '\'Произошло перемещение в \'').'  || org.name FROM organization org WHERE org.id_org = e.ESS2)
+                END AS NOTE2
+                FROM EVENTS e
+                JOIN EVENTTYPE et ON e.ID_EVENTTYPE = et.ID_EVENTTYPE
+                LEFT JOIN DEVICE d ON e.ID_DEV = d.ID_DEV
+                WHERE e.ESS1 = :id_pep
+                ORDER BY e.ID_EVENT';
+
+        $query = DB::query(Database::SELECT, $sql)
+            ->param(':id_pep', $id_pep);
+
+        $result = $query->execute(Database::instance('fb'))
+                       ->as_array();
+
+        return $result;
+    }
+
+
+	public function getPersonById($id_pep) {
+        $sql = "SELECT 
+                    p.ID_PEP AS ID_PEP, 
+                    p.SURNAME AS SURNAME, 
+                    p.NAME AS NAME, 
+                    p.PATRONYMIC AS PATRONYMIC,
+                    p.ID_ORG AS ID_ORG,
+                    p.LOGIN AS LOGIN,
+                    o.NAME AS ORG_NAME
+                FROM people p
+                LEFT JOIN organization o ON o.ID_ORG = p.ID_ORG
+                WHERE p.LOGIN IS NOT NULL 
+                  AND p.LOGIN != ''
+                  AND p.PSWD IS NOT NULL
+                  AND p.PSWD != ''
+                  AND p.ID_PEP = :id_pep";
+        
+        $query = DB::query(Database::SELECT, $sql)
+            ->param(':id_pep', $id_pep)
+            ->execute(Database::instance('fb'));
+        
+        $result = $query->as_array();
+        
+        if (empty($result)) {
+            return null;
+        }
+        
+        $row = $result[0];
+        
+        return [
+            'ID_PEP' => $row['ID_PEP'],
+            'SURNAME' => !empty($row['SURNAME']) ? iconv('CP1251', 'UTF-8', $row['SURNAME']) : '',
+            'NAME' => !empty($row['NAME']) ? iconv('CP1251', 'UTF-8', $row['NAME']) : '',
+            'PATRONYMIC' => !empty($row['PATRONYMIC']) ? iconv('CP1251', 'UTF-8', $row['PATRONYMIC']) : '',
+            'ID_ORG' => $row['ID_ORG'],
+            'LOGIN' => $row['LOGIN'],
+            'ORG_NAME' => !empty($row['ORG_NAME']) ? iconv('CP1251', 'UTF-8', $row['ORG_NAME']) : ''
+        ];
+    }
 }

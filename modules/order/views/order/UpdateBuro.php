@@ -52,6 +52,14 @@
             </fieldset>
         <?php echo Form::close(); ?>
         
+        <?php if ($from_table): ?>
+            <?php echo Form::open('order/deleteFromBuro'); ?>
+                <input type="hidden" name="buro_id" value="<?php echo HTML::chars($id_buro); ?>">
+                <input type="hidden" name="user_id" value="<?php echo HTML::chars($id_pep); ?>">
+                <?php echo Form::submit('delete', 'Удалить из бюро'); ?>
+            <?php echo Form::close(); ?>
+        <?php endif; ?>
+        
         <?php echo Form::open('order/buro_details/'.$id_buro); ?>
             <?php echo Form::submit('back', 'Назад к бюро'); ?>
         <?php echo Form::close(); ?>

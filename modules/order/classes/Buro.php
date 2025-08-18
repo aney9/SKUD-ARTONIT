@@ -414,5 +414,37 @@ public function getCountBuro($id_pep) {
     return isset($result[0]['count_buro']) ? (int)$result[0]['count_buro'] : 0;
 }
 
+public function getCountAccess($id_buro){
+    $sql = 'SELECT COUNT(*) as count_access
+    FROM bu_access bu
+    where bu.id_buro = :id_buro';
+    $result = DB::query(Database::SELECT, $sql)
+    ->param(':id_buro', $id_buro)
+    ->execute(Database::instance($this->base_po))
+    ->as_array();
+
+    return isset($result[0]['count_access']) ? (int)$result[0]['count_access'] : 0;
+}
+
+public function deleteUserFromBuro($id_buro, $id_pep) {
+    $query = DB::delete($this->table_po)
+        ->where('id_buro', '=', $id_buro)
+        ->where('id_pep', '=', $id_pep);
+        
+    $result = $query->execute($this->base_po);
+    Log::instance()->add(Log::NOTICE, 'Удаление пользователя из бюро в bu_conf: id_buro=' . $id_buro . ', id_pep=' . $id_pep . ', result=' . print_r($result, true));
+    
+    return $result[0] > 0;
+}
+
+public function getUniqueIdPepFromBuConf() {
+        $sql = 'SELECT DISTINCT id_pep FROM bu_conf';
+        $query = DB::query(Database::SELECT, $sql)
+            ->execute(Database::instance($this->base_po));
+        return $query->as_array(null, 'id_pep');
+    }
+
+
+
     
 }

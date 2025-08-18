@@ -30,79 +30,98 @@ class Model_Order extends Model
 	*/
 	
 public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_filter = '')
-{
-    $baseWhere = '';
-    if ($user_role == 1) {
-        $baseWhere = '1=1'; 
-    } elseif ($user_role == 2) {
-        $baseWhere = $buro_filter ? $buro_filter : '1=0';
-    } else {
-        $baseWhere = 'gu.id_pep = :id_pep'; 
-    }
-
-    $sql = 'SELECT 
-        gu.id_guestorder, 
-        g."ID_PEP" AS id_guest, 
-        g."SURNAME" AS guest_surname, 
-        g."NAME" AS guest_name, 
-        g."PATRONYMIC" AS guest_patronymic, 
-        o.id_org, 
-        o."NAME" AS org_name, 
-        p."SURNAME" AS p_surname, 
-        gu.timeplan,
-        gu.timeorder,
-		gu.is_active,
-        p."ID_PEP" as id_pep,
-        c_g.id_card AS guest_card_number,
-        c_g."CREATEDAT" as createdat
-    FROM guestorder gu
-    JOIN people g ON gu.id_guest = g.id_pep
-    JOIN organization o ON gu.id_org = o.id_org
-    JOIN people p ON gu.id_pep = p.id_pep
-    LEFT JOIN card c_g ON g.id_pep = c_g.id_pep
-    WHERE gu.id_guestorder IN (
-        SELECT MAX(g2.id_guestorder)
-        FROM guestorder g2
-        JOIN people p2 ON g2.id_guest = p2.id_pep
-        WHERE ' . $baseWhere;
-
-    if ($mode === 'guest_mode') {
-        $sql .= ' AND CAST(g2.timeplan AS DATE) >= CURRENT_DATE';
-        $sql .= ' AND p2.id_org = 2';
-		$sql .= ' AND gu.is_active = 1';
-        $sql .= ' GROUP BY g2.id_guest)';
-        $sql .= ' ORDER BY gu.timeplan ASC';
-    } elseif ($mode === 'archive_mode') {
-        $sql .= ' AND CAST(g2.timeplan AS DATE) <= CURRENT_DATE';
-        $sql .= ' AND p2.id_org = 3';
-		$sql .= ' AND ((gu.is_active <> 1) or (gu.is_active is null))';
-        $sql .= ' GROUP BY g2.id_guest)';
-        $sql .= ' ORDER BY gu.timeorder DESC';
-    } else {
-        $sql .= ' GROUP BY g2.id_guest)';
-    }
-
-    Log::instance()->add(Log::DEBUG, 'SQL query: ' . $sql);
-
-    try {
-        $query = DB::query(Database::SELECT, $sql);
-        if ($user_role != 1 && $user_role != 2) {
-            $query->param(':id_pep', $id_pep);
+    {
+        $baseWhere = '';
+        if ($user_role == 1) {
+            $baseWhere = '1=1'; // Все заявки для id_role = 1
+        } elseif ($user_role == 2) {
+            $buro = new Buro();
+            $user_buros = $buro->getIdBuroForUser($id_pep);
+            $buro_ids = array_map('intval', Arr::pluck($user_buros, 'id_buro'));
+            Log::instance()->add(Log::DEBUG, 'Buro IDs for user ' . $id_pep . ': ' . print_r($buro_ids, true));
+            
+            if (!empty($buro_ids)) {
+                $sql_guests = 'SELECT DISTINCT id_pep FROM bu_guest WHERE id_buro IN (' . implode(',', $buro_ids) . ')';
+                $guest_ids = DB::query(Database::SELECT, $sql_guests)
+                    ->execute(Database::instance('bucfg'))
+                    ->as_array(null, 'id_pep');
+                Log::instance()->add(Log::DEBUG, 'Guest IDs from bu_guest: ' . print_r($guest_ids, true));
+                
+                if (!empty($guest_ids)) {
+                    $guest_ids = array_map('intval', $guest_ids);
+                    $baseWhere = 'gu.id_guest IN (' . implode(',', $guest_ids) . ')';
+                } else {
+                    $baseWhere = '1=0'; // Нет гостей — нет заявок
+                }
+            } else {
+                $baseWhere = '1=0'; // Нет бюро — нет заявок
+            }
+        } else {
+            $baseWhere = 'gu.id_org = :id_org'; // Фильтр по организации для id_role = 3
         }
+
+        $sql = 'SELECT 
+            gu.id_guestorder, 
+            g."ID_PEP" AS id_guest, 
+            g."SURNAME" AS guest_surname, 
+            g."NAME" AS guest_name, 
+            g."PATRONYMIC" AS guest_patronymic, 
+            o.id_org, 
+            o."NAME" AS org_name, 
+            p."SURNAME" AS p_surname,
+            g."NUMDOC" as numdoc, 
+            gu.timeplan,
+            gu.timeorder,
+            gu.is_active,
+            p."ID_PEP" as id_pep,
+            c_g.id_card AS guest_card_number,
+            c_g."CREATEDAT" as createdat
+        FROM guestorder gu
+        JOIN people g ON gu.id_guest = g.id_pep
+        JOIN organization o ON gu.id_org = o.id_org
+        JOIN people p ON gu.id_pep = p.id_pep
+        LEFT JOIN card c_g ON g.id_pep = c_g.id_pep
+        WHERE gu.id_guestorder IN (
+            SELECT MAX(g2.id_guestorder)
+            FROM guestorder g2
+            JOIN people p2 ON g2.id_guest = p2.id_pep
+            WHERE ' . $baseWhere;
+
+        if ($mode === 'guest_mode') {
+            $sql .= ' AND CAST(g2.timeplan AS DATE) >= CURRENT_DATE';
+            $sql .= ' AND p2.id_org = 2';
+            $sql .= ' AND gu.is_active = 1';
+            $sql .= ' GROUP BY g2.id_guest)';
+            $sql .= ' ORDER BY gu.timeplan ASC';
+        } elseif ($mode === 'archive_mode') {
+            $sql .= ' AND CAST(g2.timeplan AS DATE) <= CURRENT_DATE';
+            $sql .= ' AND p2.id_org = 3';
+            $sql .= ' AND ((gu.is_active <> 1) OR (gu.is_active IS NULL))';
+            $sql .= ' GROUP BY g2.id_guest)';
+            $sql .= ' ORDER BY gu.timeorder DESC';
+        } else {
+            $sql .= ' GROUP BY g2.id_guest)';
+        }
+
+        Log::instance()->add(Log::DEBUG, 'Final SQL query: ' . $sql);
+
+        $query = DB::query(Database::SELECT, $sql);
+        if ($user_role == 3) {
+            $user = new User();
+            $query->param(':id_org', $user->id_org);
+            Log::instance()->add(Log::DEBUG, 'Binding id_org: ' . $user->id_org . ' for user_role = 3');
+        }
+		//echo Debug::vars('114', $query);exit;
+
         $result = $query->execute(Database::instance('fb'))->as_array();
-        
+        //echo Debug::vars('117', $result);exit;
         if (empty($result)) {
             Log::instance()->add(Log::DEBUG, 'No records found, result is empty');
         } else {
             Log::instance()->add(Log::DEBUG, 'Result structure: ' . print_r(array_keys($result[0]), true));
         }
         return $result;
-    } catch (Exception $e) {
-        Log::instance()->add(Log::ERROR, 'Database error: ' . $e->getMessage());
-        return array();
     }
-}
-
 	
 	
 	

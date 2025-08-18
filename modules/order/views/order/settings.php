@@ -24,7 +24,14 @@
         </tbody>
     </table>
     
-    <a href="<?php echo URL::site('order/addBuro'); ?>" class="btn-add">Добавить бюро</a>
+    <?php
+echo Form::open('order/addBuro', array('class' => 'add-buro-form'));
+echo Form::hidden('todo', 'addburo');
+echo Form::submit('addburo', __('Добавить бюро'), array(
+    'class' => 'btn-add'
+));
+echo Form::close();
+?>
 
     <!-- Таблица сотрудников и их бюро -->
     <h3 style="margin-top: 30px;">Сотрудники и их доступы</h3>
@@ -33,6 +40,7 @@
             <tr>
                 <th rowspan="2">ID</th>
                 <th rowspan="2">ФИО</th>
+                <th rowspan="2">Логин</th>
                 <th rowspan="2">Организация</th>
                 <th colspan="<?php echo count($buros); ?>">Бюро пропусков</th>
             </tr>
@@ -56,6 +64,12 @@
                         'contacts/setFlag/'.$person['ID_PEP'],
                         HTML::chars($fio)
                     ); 
+                    ?>
+                </td>
+                <td>
+                    <?php
+                        $login = isset($person['LOGIN']) ? $person['LOGIN'] : '';
+                        echo HTML::chars($login)
                     ?>
                 </td>
                 <td>

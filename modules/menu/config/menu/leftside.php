@@ -5,7 +5,7 @@
  * если 'visible' => false, то пункт меню не будет показан
  * если 'visible' => true или отсутсвует, то пункт меню будет показан
  * */
- 
+ $user = new User();
 return [
 	'view' => 'templates/menu/bootstrap/navbar',
 	'items' => [
@@ -214,7 +214,8 @@ return [
 									'url' => 'order/settings',
 									'icon'=>'',
 									'tittle'=>'Настройки',
-									'tooltip'=>'sidebar.settings'
+									'tooltip'=>'Настройки',
+									'visible'=> ($user->id_role === 1)
 						]
 						
 							

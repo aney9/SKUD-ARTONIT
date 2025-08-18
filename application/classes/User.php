@@ -16,6 +16,7 @@ class User
     public $bp;
     public $id_role;
     public $count_buro;
+    public $count_access;
     
     public function __construct($default = array())
     {
@@ -41,6 +42,7 @@ class User
         $this->bp = $this->getBuroNameForUser();
         $buro = new Buro();
         $this->count_buro = $buro->getCountBuro($this->id_pep);
+        $this->count_access = $buro->getCountAccess($this->id_buro);
     }
     
     /**

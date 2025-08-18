@@ -148,71 +148,50 @@ class Controller_Order extends Controller_Template
 	*режим работы (гость или архив) заданы в this и в сессии)
 	*/
 public function action_index($filter = null)
-{
-    $po = Model::factory('Order');
-    $mode = Session::instance()->get('mode');
-    $user = new User();
-    $id_pep = $user->id_pep;
-    $user_role = $user->id_role;
+    {
+        $po = Model::factory('Order');
+        $mode = Session::instance()->get('mode');
+        $user = new User();
+        $id_pep = $user->id_pep;
+        $user_role = $user->id_role;
+        $guest = new Guest2();
+        $org = $guest->getOrganizations();
 
-    $buro = new Buro();
-    $buro_filter = '';
+        $buro = new Buro();
+        $access_names = [];
+        $current_accesses = [];
 
-    $user_buros = $buro->getIdBuroForUser($id_pep);
-	//echo Debug::vars('163', $user_buros);exit;
-    $access_names = [];
-    $current_accesses = [];
-
-    if ($user_role == 2 && !empty($user_buros)) {
-        // Собираем всех пользователей из всех бюро пользователя
-        $all_users = [];
-        foreach ($user_buros as $user_buro) {
-            $buro_users = $buro->getUsersByBuroId($user_buro['id_buro']);
-            $all_users = array_merge($all_users, $buro_users);
+        if ($user_role == 2) {
+            $user_buros = $buro->getIdBuroForUser($id_pep);
+            if (!empty($user_buros)) {
+                foreach ($user_buros as $user_buro) {
+                    $accesses = $buro->getBuroAccesses($user_buro['id_buro']);
+                    $current_accesses = array_merge($current_accesses, Arr::pluck($accesses, 'id_accessname'));
+                }
+                $current_accesses = array_unique($current_accesses);
+                $access_names = $buro->getAccessName();
+            }
         }
-        
-        // Добавляем текущего пользователя и убираем дубликаты
-        $all_users[] = $id_pep;
-        $all_users = array_unique($all_users);
-        
-        // Получаем доступы для всех бюро пользователя
-        foreach ($user_buros as $user_buro) {
-            $accesses = $buro->getBuroAccesses($user_buro['id_buro']);
-            $current_accesses = array_merge($current_accesses, Arr::pluck($accesses, 'id_accessname'));
-        }
-        $current_accesses = array_unique($current_accesses);
-        
-        $access_names = $buro->getAccessName();
 
-        if (!empty($all_users)) {
-            $all_users = array_map('intval', $all_users); 
-            $buro_filter = '(p."ID_PEP" IN (' . implode(',', $all_users) . ') OR g."ID_PEP" IN (' . implode(',', $all_users) . '))';
-        } else {
-            $buro_filter = '1=0'; 
-        }
+        $list = $po->getListNowOrder($id_pep, $mode, $user_role);
+
+        $fl = $this->session->get('alert');
+        $arrAlert = $this->session->get('arrAlert');
+        $this->session->delete('alert');
+        $this->session->delete('arrAlert');
+        $mode = 'neworder';
+		//echo Debug::vars('lala', $list);exit;
+
+        $this->template->content = View::factory('order/list')
+            ->bind('mode', $mode)
+            ->bind('people', $list)
+            ->bind('alert', $fl)
+            ->bind('arrAlert', $arrAlert)
+            ->bind('filter', $filter)
+            ->bind('user', $user)
+            ->bind('org', $org)
+            ->bind('pagination', $pagination);
     }
-
-    $list = $po->getListNowOrder($id_pep, $mode, $user_role, $buro_filter);
-	//echo Debug::vars('197', $list);exit;
-
-    $fl = $this->session->get('alert');
-    $arrAlert = $this->session->get('arrAlert');
-    $this->session->delete('alert');
-    $this->session->delete('arrAlert');
-    $mode = 'neworder';
-
-	$user = new User();
-	//echo Debug::vars('204', $user);exit;
-
-    $this->template->content = View::factory('order/list')
-        ->bind('mode', $mode)
-        ->bind('people', $list)
-        ->bind('alert', $fl)
-        ->bind('arrAlert', $arrAlert)
-        ->bind('filter', $filter)
-		->bind('user', $user)
-        ->bind('pagination', $pagination);
-}
 	/*
 	обработка POST-запросов
 	11.11.2023 сохранение информации по гостю.
@@ -366,132 +345,122 @@ public function action_index($filter = null)
 			*/
 
 			case 'savenewwithcard':
-				$guest = new Guest2();
-				$id = $guest->getLastIdPep();
-				$id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
-					? (int)$id[0]['LAST_ID_PEP'] 
-					: 0;
-				$id_pep = $id_pe +1;
-				$guest->name = Arr::get($_POST, 'name', '');
-				$guest->patronymic = Arr::get($_POST, 'patronymic', '');
-				$guest->surname = Arr::get($_POST, 'surname', '');
-				
-				$docnum1 = Arr::get($_POST, 'docnum1', '');
-				$docnum2 = Arr::get($_POST, 'docnum2', '');
-				$doc_type = Arr::get($_POST, 'doc_type', '');
-				$guest->numdoc = $docnum1 . '#' . $docnum2 . '@' . $doc_type;
-				$guest->docdate = Arr::get($_POST, 'datedoc', '');
-				$guest->note = Arr::get($_POST, 'note', '');
-				$user = new User();
-					//echo Debug::vars($user);exit;
-					$id_pep_user = $user->id_pep;
-					//echo Debug::vars('366', $id_pep_user);exit;
-					$id_org = $user->id_org;
-					$cardDateStart = isset($_POST['carddatestart']) ? trim($_POST['carddatestart']) : date('d.m.Y');
-					$cardDateEnd = isset($_POST['carddateend']) ? trim($_POST['carddateend']) : date('d.m.Y', strtotime('+1 day'));
-					$timeplan = DateTime::createFromFormat('d.m.Y', $cardDateStart);
-					$timevalid = DateTime::createFromFormat('d.m.Y', $cardDateEnd);
-					if($guest->addGuest() >= 0) { // если гость добавлен успешно (пока без карты), то то формирую запись о заказе гостя
-						//echo Debug::vars($guest);exit;
-						
-						$alert=__('guest.addOK', array(':surname'=>$guest->surname,':name'=>$guest->name,':patronymic'=>$guest->patronymic,':id_pep'=>$guest->id));
-							
-							// присвоение категории доступа по умолчанию для организации Гость.
-							
-							
-							$order=new Order();//формирую ордер (заказ пропуска)
-							
-							//echo Debug::vars($order);exit;
-							$order->id_pep=$id_pep_user;//кто заказал пропуск
-							$order->id_guest=$id_pep;//ссылка на гостя, на которого оформляется заказ
-							//echo Debug::vars('275', $order);exit;
-							//$order->id_guest=$guest->id;//ссылка на гостя, на которого оформляется заказ
-							$order->id_org=$id_org;//в какую организацию должен пойти гость
-							$order->timeorder='\'now\'';//метка времени во сколько сделана заявка
-							$order->timeplan="'" . $timeplan->format('Y-m-d H:i:s') . "'";//во сколько ждем гостя
-							$order->timevalid="'" . $timevalid->format('Y-m-d H:i:s') . "'";;//до какого времени ждем гостя
-							$order->remark=Arr::get($_POST, 'note','');//комментарии (цель визита, например).
-							//echo Debug::vars($order);exit;
-							if($order->add())
-							{
-								
-								$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
+    // Проверяем, что организация выбрана
+    $id_org = Arr::get($_POST, 'org_selector', null);
+    if (empty($id_org)) {
+        $alert = __('Не выбрана организация');
+        Session::instance()->set('e_mess', array('result'=>$alert));
+        $this->redirect('order/edit/0/neworder');
+        break;
+    }
+
+    $guest = new Guest2();
+    $id = $guest->getLastIdPep();
+    $id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
+        ? (int)$id[0]['LAST_ID_PEP'] 
+        : 0;
+    $id_pep = $id_pe +1;
+    
+    // Заполняем данные гостя
+    $guest->name = Arr::get($_POST, 'name', '');
+    $guest->patronymic = Arr::get($_POST, 'patronymic', '');
+    $guest->surname = Arr::get($_POST, 'surname', '');
+    
+    $docnum1 = Arr::get($_POST, 'docnum1', '');
+    $docnum2 = Arr::get($_POST, 'docnum2', '');
+    $doc_type = Arr::get($_POST, 'doc_type', '');
+    $guest->numdoc = $docnum1 . '#' . $docnum2 . '@' . $doc_type;
+    $guest->docdate = Arr::get($_POST, 'datedoc', '');
+    $guest->note = Arr::get($_POST, 'note', '');
+	
+    
+    $user = new User();
+    $id_pep_user = $user->id_pep;
+	$id_buro = $user->id_buro;
+	$buro = new Buro();
+	$buro->addGuestToBuro($id_pep, $id_buro);
+    
+    // Даты действия карты
+    $cardDateStart = isset($_POST['carddatestart']) ? trim($_POST['carddatestart']) : date('d.m.Y');
+    $cardDateEnd = isset($_POST['carddateend']) ? trim($_POST['carddateend']) : date('d.m.Y', strtotime('+1 day'));
+    $timeplan = DateTime::createFromFormat('d.m.Y', $cardDateStart);
+    $timevalid = DateTime::createFromFormat('d.m.Y', $cardDateEnd);
+    
+    if($guest->addGuest() >= 0) {
+        $alert=__('guest.addOK', array(
+            ':surname'=>$guest->surname,
+            ':name'=>$guest->name,
+            ':patronymic'=>$guest->patronymic,
+            ':id_pep'=>$guest->id
+        ));
+        
+        $order = new Order();
+        $order->id_pep = $id_pep_user;
+        $order->id_guest = $id_pep;
+        $order->id_org = $id_org; // Используем выбранную организацию
+        $order->timeorder = '\'now\'';
+        $order->timeplan = "'" . $timeplan->format('Y-m-d H:i:s') . "'";
+        $order->timevalid = "'" . $timevalid->format('Y-m-d H:i:s') . "'";
+        $order->remark = Arr::get($_POST, 'note','');
+        
+        if($order->add() === 0) {
+            $arrAlert[] = array(
+                'actionResult' => $guest->actionResult, 
+                'actionDesc' => $guest->actionDesc
+            );
+            
+            $alert = __('Заявка успешно создана', array());
+            Session::instance()->set('ok_mess', array('result'=>$alert));
+            
+            // Обработка карты
+            if (!empty($idcard)) {
+                $key = new Keyk($idcard);
+                $check = $key->check(1);
                 
-								$alert= __('Заявка успешно создана', array());
-								//echo Debug::vars('337');exit;
-								Session::instance()->set('ok_mess', array('result'=>$alert));
-									
-								
-							} else {
-								
-								$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
-								$alert = __('Ошибка создания заявки', array());
-								Session::instance()->set('e_mess', array('result'=>$alert));
-							}
-							if (!empty($idcard)){
-					//echo Debug::vars('382', $idcard);exit;
-					$key=new Keyk($idcard);
-					$check=$key->check(1);
-
-					if(is_null($check)){// если NULL - значит, этой карты не в базе данных, её можно выдавать гостю
-							$key->id_card=$idcard;
-							$key->timestart=Arr::get($_POST, 'carddatestart');
-							$key->timeend=Arr::get($_POST, 'carddateend');
-							$key->id_pep=$guest->id_pep;
-							$key->flag=1;
-							$key->rfidmode=$rfidmode;
-							$id_pep1 = $id_pep;
-							$id_accessname = Arr::get($_POST, 'ACCESS_NAME');
-							if ($id_accessname) {
-        						$guest->setAclDefault($id_pep1, $id_accessname);
-    						}
-							//echo Debug::vars('435', $id_accessname);exit;
-							//echo Debug::vars('433',$id_pep);exit;
-							
-							//присвоедние карты RFID
-							if($key->addRfid()==0) { //сохраняю карту RFID
-									// перемещаю гостя в Гость
-								//$guest->moveToGuest();	
-								//throw new Exception($alert, 271);
-
-								$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
-                
-								$alert= __('Карта успешно выдана', array());
-								//echo Debug::vars('337');exit;
-								Session::instance()->set('ok_mess', array('result'=>$alert));
-								$this->session->set('mode', 'guest_mode');
-							} else {
-							    //$alert=__('guest.addRfidErr', array(':id_card'=>$key->id_card));
-								//$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>$alert);
-								//Session::instance()->set('arrAlert',$arrAlert);
-							    //throw new Exception($alert, 274);
-
-								$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
-								$alert = __('Ошибка выдачи карты', array());
-								Session::instance()->set('e_mess', array('result'=>$alert));
-							}
-							//echo Debug::vars('398', $key);exit;
-				//Session::instance()->set('alert', $alert);
-		
-				} else {
-					//карта выдана сотруднику с id_pep=$check
-					
-					$anypeople=new Guest2($check);
-					
-					//Session::instance()->set('alert', __('contact.key_occuped_'.$check));
-					$alert=__('guest.key_occuped', array(':idcard'=>$idcard, ':id_pep'=>$anypeople->id_pep,':name'=>iconv('CP1251', 'UTF-8',$anypeople->name),':surname'=>iconv('CP1251', 'UTF-8',$anypeople->surname),':patronymic'=>iconv('CP1251', 'UTF-8',$anypeople->patronymic)));
-					
-					$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>$alert);
-					
-					Session::instance()->set('arrAlert',$arrAlert);
-				//throw new Exception($alert, 274);
-				}
-
-			}
-		}
-		$this->redirect('order/edit/0/neworder');
-		break;
-
+                if(is_null($check)) {
+                    $key->id_card = $idcard;
+                    $key->timestart = Arr::get($_POST, 'carddatestart');
+                    $key->timeend = Arr::get($_POST, 'carddateend');
+                    $key->id_pep = $guest->id_pep;
+                    $key->flag = 1;
+                    $key->rfidmode = $rfidmode;
+                    $id_pep1 = $id_pep;
+                    $id_accessname = Arr::get($_POST, 'ACCESS_NAME');
+                    
+                    if ($id_accessname) {
+                        $guest->setAclDefault($id_pep1, $id_accessname);
+                    }
+                    
+                    if($key->addRfid() == 0) {
+                        $arrAlert[] = array(
+                            'actionResult' => $guest->actionResult, 
+                            'actionDesc' => $guest->actionDesc
+                        );
+                        $alert = __('Карта успешно выдана', array());
+                        Session::instance()->set('ok_mess', array('result'=>$alert));
+                        $this->session->set('mode', 'guest_mode');
+                    } else {
+                        $alert = __('Ошибка выдачи карты', array());
+                        Session::instance()->set('e_mess', array('result'=>$alert));
+                    }
+                } else {
+                    $alert = __('guest.key_occuped', array(
+                        ':idcard' => $idcard,
+                        ':id_pep' => $check,
+                        ':name' => $guest->name,
+                        ':surname' => $guest->surname,
+                        ':patronymic' => $guest->patronymic
+                    ));
+                    Session::instance()->set('e_mess', array('result'=>$alert));
+                }
+            }
+        } else {
+            $alert = __('Ошибка создания заявки', array());
+            Session::instance()->set('e_mess', array('result'=>$alert));
+        }
+    }
+    $this->redirect('order/edit/0/neworder');
+    break;
 
 
 			//06.08.2025
@@ -508,7 +477,7 @@ public function action_index($filter = null)
 				$id_org = $get[0]['ID_ORG'];
 				//echo Debug::vars('Привет');exit;
 				//echo Debug::vars('475', $guest->updateOrder($id_pep, $id_guest, $id_org));exit;
-				if($guest->updateOrder($id_pep, $id_guest, $id_org))
+				if($guest->updateOrder($id_pep, $id_guest, $id_org) === 0)
 							{
 								
 									$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
@@ -527,6 +496,10 @@ public function action_index($filter = null)
 									Session::instance()->set('e_mess', array('result'=>$alert));
 							}
 				$this->redirect('order/guest');
+				$arrAlert[]=array('actionResult'=>$guest->actionResult, 'actionDesc'=>$guest->actionDesc);
+				$alert= __('Заявка успешно обновлена', array());
+				//echo Debug::vars('337');exit;
+				Session::instance()->set('ok_mess', array('result'=>$alert));
 				break;
 
 
@@ -556,9 +529,9 @@ public function action_index($filter = null)
 					не реализовано 7.07.2025
 					*/
 					$alert = __('guest.forceexitOK', array(
-						':name' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->name) ?: $guest->name,
-						':surname' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->surname) ?: $guest->surname,
-						':patronymic' => @iconv('CP1251', 'UTF-8//IGNORE', $guest->patronymic) ?: $guest->patronymic
+						':name' => $guest->name,
+						':surname' => $guest->surname,
+						':patronymic' =>  $guest->patronymic
 					));
 					Session::instance()->set('alert', $alert);
 
@@ -693,6 +666,9 @@ public function action_index($filter = null)
         $id_pep = $this->request->param('id');
         $mode = $this->request->param('mode');
         $force_org = $this->request->query('id_org');
+		$guest = new Guest2();
+		//echo Debug::vars('670', $guest);exit;
+		$org = $guest->getOrg();
 
         $org_tree = Model::Factory('Company')->getOrgList();
         $fl = $this->session->get('alert');
@@ -755,6 +731,7 @@ public function action_index($filter = null)
             ->bind('buro_accesses', $buro_accesses)
             ->bind('selected_access', $selected_access)
 			->bind('buro_list', $buro_list)
+			->bind('org', $org)
             ->bind('user', $user);
     }
 	public function _action__view()
@@ -1325,25 +1302,29 @@ public function action_settings() {
     $buros = $buro->getBuro();
     
     $guest = new Guest2();
-    $people = $guest->getPeopleWithLogin();
+    
+    $uniqueIdPep = $buro->getUniqueIdPepFromBuConf();
     
     $peopleWithBuro = [];
-    foreach ($people as $person) {
-        $userBuros = $buro->getIdBuroForUser($person['ID_PEP']);
-        $buroRoles = []; // Здесь будет ассоциативный массив [id_buro => role_name]
+    foreach ($uniqueIdPep as $id_pep) {
+        $person = $guest->getPersonById($id_pep);
         
-        foreach ($userBuros as $userBuro) {
-            $role = $buro->getRoleById($userBuro['id_role']);
-            $buroRoles[$userBuro['id_buro']] = [
-                'role_name' => isset($role[0]['name']) ? $role[0]['name'] : '-'
-            ];
+        if ($person) {
+            $userBuros = $buro->getIdBuroForUser($person['ID_PEP']);
+            $buroRoles = [];
+            
+            foreach ($userBuros as $userBuro) {
+                $role = $buro->getRoleById($userBuro['id_role']);
+                $buroRoles[$userBuro['id_buro']] = [
+                    'role_name' => isset($role[0]['name']) ? $role[0]['name'] : '-',
+                    'role_id' => $userBuro['id_role']
+                ];
+            }
+            
+            $person['buros'] = $buroRoles;
+            $peopleWithBuro[] = $person;
         }
-        
-        $person['buros'] = $buroRoles;
-        $peopleWithBuro[] = $person;
     }
-
-	//echo Debug::vars('1095', $peopleWithBuro);exit;
     
     $this->template->content = View::factory('order/settings')
         ->set('buros', $buros)
@@ -1671,6 +1652,39 @@ public function action_PersonalData()
     Session::instance()->set('flash_success', 'Зоны доступа успешно обновлены');
     HTTP::redirect('order/buro_details/' . $id_buro);
 }
+
+
+public function action_deleteFromBuro() {
+    if ($this->request->method() === 'POST') {
+        $post = $this->request->post();
+        
+        $buro_id = Arr::get($post, 'buro_id');
+        $user_id = Arr::get($post, 'user_id');
+        
+        if ($buro_id && $user_id) {
+            $buro = new Buro();
+            $result = $buro->deleteUserFromBuro($buro_id, $user_id);
+            
+            $this->redirect('order/buro_details/' . $buro_id);
+        }
+    }
+    
+    // Если не POST, возможно, редирект или ошибка, но по умолчанию редирект на главную или детали
+    $this->redirect('order/buro_details');
+}
+
+public function action_historyGuest()
+    {
+		$id_pep = $this->request->param('id');
+        $guest = new Guest2();
+        $events = $guest->getEvents($id_pep);
+		//echo Debug::vars('1700', $events);
+
+        $this->template->content = View::factory('order/historyGuest')
+            ->bind('id_pep', $id_pep)
+            ->bind('events', $events)
+			->bind('pagination', $pagination);
+    }
 
 
 

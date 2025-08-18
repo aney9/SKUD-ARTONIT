@@ -1,7 +1,7 @@
 <fieldset>
     <legend><?php echo __('Персональные данные'); ?></legend>
     <div>
-        <label for="surname"><?php echo __('contact.surname'); ?></label>
+        <label for="surname"><?php echo __('contact.surname'); ?> <span style="color: black;">*</span></label>
         <br />
         <input 
             type="text" 
@@ -23,7 +23,7 @@
         <table align="left">
             <tr>
                 <td>
-                    <label for="name"><?php echo __('contact.name'); ?></label>
+                    <label for="name"><?php echo __('contact.name'); ?> <span style="color: black;">*</span></label>
                     <br />
                     <input 
                         type="text" 
@@ -126,3 +126,4 @@
     </div>
     <br style="clear: both;" />
 </fieldset>
+* - поля обязательны к заполнению.

@@ -189,20 +189,37 @@ WHERE (ID_PEP = 7607) AND (ID_DB = 1);
 			}
 	
 	public function delete($id)
-    {
-        
-            $sql = 'DELETE FROM GUESTORDER WHERE ID_GUESTORDER = :id_guestorder';
-            $query = DB::query(Database::DELETE, $sql)
-                ->parameters(array(
-                    ':id_guestorder' => $id
-                ))
-                ->execute(Database::instance('fb'));
+{
 
-			//echo Debug::vars('201', $query);exit;
+	$sql_select = 'SELECT ID_GUEST FROM GUESTORDER WHERE ID_GUESTORDER = :id_guestorder';
+    $person_id = DB::query(Database::SELECT, $sql_select)
+        ->parameters(array(
+            ':id_guestorder' => $id
+        ))
+        ->execute(Database::instance('fb'))
+        ->get('ID_GUEST');
 
-            $this->actionResult = 0;
-            return 0;
-	}
+	//echo Debug::vars('209', $person_id);exit;
+
+
+    $sql = 'DELETE FROM GUESTORDER WHERE ID_GUESTORDER = :id_guestorder';
+    $query = DB::query(Database::DELETE, $sql)
+        ->parameters(array(
+            ':id_guestorder' => $id
+        ))
+        ->execute(Database::instance('fb'));
+
+	
+        $sql_update = 'UPDATE PEOPLE SET ID_ORG = 3 WHERE ID_PEP = :id_people';
+        DB::query(Database::UPDATE, $sql_update)
+            ->parameters(array(
+                ':id_people' => $person_id
+            ))
+            ->execute(Database::instance('fb'));
+
+    $this->actionResult = 0;
+    return 0;
+}
 
 	// public function getOrdersByIdPep($id){
 	// 	$sql = 'SELECT * FROM '

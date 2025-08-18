@@ -9,11 +9,29 @@
                 $selected_value = isset($selected_access) ? $selected_access : '';
                 
                 foreach ($buro_accesses as $access) {
-                    echo Form::radio('ACCESS_NAME', $access['ID_ACCESSNAME'], 
-                        ($access['ID_ACCESSNAME'] == $selected_value), 
-                        array('id' => 'access_'.$access['ID_ACCESSNAME'])
-                    );
-                    echo Form::label('access_'.$access['ID_ACCESSNAME'], $access['NAME']);
+                    if ($user->count_access == 1) {
+                        echo '<input type="hidden" name="ACCESS_NAME" value="' . htmlspecialchars($access['ID_ACCESSNAME']) . '">';
+                        echo Form::radio(
+                            'ACCESS_NAME_display',
+                            $access['ID_ACCESSNAME'],
+                            true,
+                            array(
+                                'id' => 'access_' . htmlspecialchars($access['ID_ACCESSNAME']),
+                                'disabled' => 'disabled'
+                            )
+                        );
+                    } else {
+                        echo Form::radio(
+                            'ACCESS_NAME',
+                            $access['ID_ACCESSNAME'],
+                            ($access['ID_ACCESSNAME'] == $selected_value),
+                            array(
+                                'id' => 'access_' . htmlspecialchars($access['ID_ACCESSNAME']),
+                                'required' => 'required' // Добавлен атрибут required
+                            )
+                        );
+                    }
+                    echo Form::label('access_' . htmlspecialchars($access['ID_ACCESSNAME']), htmlspecialchars($access['NAME']));
                     echo '<br>';
                 }
             } else {
