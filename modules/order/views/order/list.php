@@ -36,15 +36,45 @@ if ($alert) { ?>
     <br class="clear"/>
     <div class="content">
         <?php if ($user->id_role == 1 || $user->id_role == 2): ?>
-        <?php 
-        echo Form::open('order/edit/0/neworder', array('style' => 'margin-left: 500px;'));
-        echo Form::hidden('todo', 'neworder');
-        echo Form::submit('neworder', __('Добавить гостя'), array(
-            'style' => 'margin-left: 0;',
-            'onclick' => "this.form.elements.todo.value='neworder';"
-        ));
-        echo Form::close();
-        ?>
+        <div style="margin-left: 500px;">
+            <?php 
+            echo Form::open('order/edit/0/neworder', array('style' => 'display: inline-block; margin-right: 10px;'));
+            echo Form::hidden('todo', 'neworder');
+            echo Form::submit('neworder', __('Добавить гостя'), array(
+                'style' => 'margin-left: 0;',
+                'onclick' => "this.form.elements.todo.value='neworder';"
+            ));
+            echo Form::close();
+            ?>
+            
+            <?php 
+            // Кнопка экспорта
+            $current_mode = Session::instance()->get('mode');
+            $export_url = 'order/export';
+            if ($current_mode) {
+                $export_url .= '/' . $current_mode;
+            }
+            echo Form::open($export_url, array('style' => 'display: inline-block;'));
+            echo Form::submit('export', __('Экспорт в CSV'), array(
+                'style' => 'margin-left: 0;'
+            ));
+            echo Form::close();
+            ?>
+            
+            <?php if (Session::instance()->get('mode') == 'guest_mode'): ?>
+            <?php 
+            // Кнопка "Показать все"
+            $show_all_param = isset($_GET['show_all']) && $_GET['show_all'] ? 0 : 1;
+            $button_text = $show_all_param ? 'Показать все' : 'Показать только актуальные';
+            $current_url = Request::current()->uri() . '?show_all=' . $show_all_param;
+            echo Form::open($current_url, array('style' => 'display: inline-block;'));
+            echo Form::submit('show_all', __($button_text), array(
+                'style' => 'margin-left: 10px;'
+            ));
+            echo Form::close();
+            ?>
+            <?php endif; ?>
+        </div>
         <br>
         <?php endif;?>
         
@@ -52,7 +82,6 @@ if ($alert) { ?>
         include Kohana::find_file('views', 'paginatoion_controller_template'); 
         if (count($people) > 0) { 
             if (Session::instance()->get('mode') == 'archive_mode') { 
-                // ТАБЛИЦА ДЛЯ АРХИВА (ФИО + Номер документа)
         ?>
                 <form id="form_data" name="form_data" action="" method="post">
                     <table class="data tablesorter-blue" width="100%" cellpadding="0" cellspacing="0" id="tablesorter">
@@ -60,10 +89,13 @@ if ($alert) { ?>
                             <tr>
                                 <th><?php echo __('ФИО гостя'); ?></th>
                                 <th><?php echo __('Номер документа')?></th>
+                                <th><?php echo __('Персональные данные')?></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($people as $pep) { 
+                            <?php 
+                            $pd = new PD(0); // Создаем экземпляр класса PD
+                            foreach ($people as $pep) { 
                                 $surname = isset($pep['GUEST_SURNAME']) ? $pep['GUEST_SURNAME'] : '';
                                 $name = isset($pep['GUEST_NAME']) ? $pep['GUEST_NAME'] : '';
                                 $patronymic = isset($pep['GUEST_PATRONYMIC']) ? $pep['GUEST_PATRONYMIC'] : '';
@@ -89,7 +121,6 @@ if ($alert) { ?>
                                             : 'Неизвестный тип';
                                     }
 
-                                    // Проверяем, есть ли хотя бы одна непустая часть
                                     if ($series !== '-' || $number !== '-' || $doc_type !== 'Неизвестный тип') {
                                         Log::instance()->add(Log::DEBUG, 'NUMDOC parts: series=' . $series . ', number=' . $number . ', id_doc=' . $id_doc . ', doc_type=' . $doc_type);
                                         $doc_display = 'Серия: ' . HTML::chars(iconv('CP1251', 'UTF-8', $series)) . 
@@ -103,6 +134,9 @@ if ($alert) { ?>
                                     Log::instance()->add(Log::DEBUG, 'Empty or invalid NUMDOC for id_guest=' . $id_guest . ': ' . $numdoc);
                                     $doc_display = '-';
                                 }
+
+                                // Проверяем наличие персональных данных
+                                $has_signature = $pd->checkSignature($id_guest) !== false ? true : false;
                             ?>
                             <tr>
                                 <td>
@@ -113,6 +147,16 @@ if ($alert) { ?>
                                 </td>
                                 <td>
                                     <?php echo HTML::chars($doc_display); ?>
+                                </td>
+                                <td>
+                                    <?php if ($has_signature) { ?>
+                                        <?php echo HTML::anchor(
+                                            'order/view_signature_page/' . $id_guest,
+                                            __('Посмотреть согласие')
+                                        ); ?>
+                                    <?php } else { ?>
+                                        <?php echo HTML::chars('-'); ?>
+                                    <?php } ?>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -139,10 +183,23 @@ if ($alert) { ?>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($people as $pep) { ?>
+                            <?php 
+                            $today = strtotime(date('Y-m-d'));
+                            foreach ($people as $pep) { 
+                                $createdat = isset($pep['CREATEDAT']) ? strtotime(date('Y-m-d', strtotime($pep['CREATEDAT']))) : 0;
+                                
+                                // Log values for debugging
+                                Log::instance()->add(Log::DEBUG, 'Guest ID: ' . $pep['ID_GUEST'] . 
+                                    ', CREATEDAT: ' . (isset($pep['CREATEDAT']) ? $pep['CREATEDAT'] : 'null') . 
+                                    ', GUEST_CARD_NUMBER: ' . (isset($pep['GUEST_CARD_NUMBER']) ? $pep['GUEST_CARD_NUMBER'] : 'null'));
+
+                                // Check if card is expired (CREATEDAT before today)
+                                $is_expired_card = !empty($pep['GUEST_CARD_NUMBER']) && $createdat < $today;
+                                $cell_style = $is_expired_card ? 'style="color: red !important;"' : '';
+                            ?>
                             <tr>
-                                <td><?php echo $pep['ID_GUESTORDER']; ?></td>
-                                <td>
+                                <td <?php echo $cell_style; ?>><?php echo $pep['ID_GUESTORDER']; ?></td>
+                                <td <?php echo $cell_style; ?>>
                                     <?php 
                                     $surname = isset($pep['GUEST_SURNAME']) ? $pep['GUEST_SURNAME'] : '';
                                     $name = isset($pep['GUEST_NAME']) ? $pep['GUEST_NAME'] : '';
@@ -155,7 +212,7 @@ if ($alert) { ?>
                                     );
                                     ?>
                                 </td>
-                                <td>
+                                <td <?php echo $cell_style; ?>>
                                     <?php 
                                     $card_number = isset($pep['GUEST_CARD_NUMBER']) ? $pep['GUEST_CARD_NUMBER'] : '';
                                     $timestart = isset($pep['CREATEDAT']) ? date('d.m.Y H:i', strtotime($pep['CREATEDAT'])) : '';
@@ -165,23 +222,23 @@ if ($alert) { ?>
                                     echo $output ?: ''; 
                                     ?>
                                 </td>
-                                <td><?php echo isset($pep['P_SURNAME']) ? iconv('CP1251', 'UTF-8', $pep['P_SURNAME']) : ''; ?></td>
-                                <td>
+                                <td <?php echo $cell_style; ?>><?php echo isset($pep['P_SURNAME']) ? iconv('CP1251', 'UTF-8', $pep['P_SURNAME']) : ''; ?></td>
+                                <td <?php echo $cell_style; ?>>
                                     <?php 
                                     $org = new Company($pep['ID_ORG']);
                                     echo $org->name ? iconv('CP1251', 'UTF-8//IGNORE', $org->name) : 'Не указано';
                                     ?>
                                 </td>
-                                <td>
+                                <td <?php echo $cell_style; ?>>
                                     <?php 
                                     $buro = new Buro();
                                     $guestBuro = $buro->getGuestBuro($pep['ID_GUEST']); 
                                     echo !empty($guestBuro) ? HTML::chars($guestBuro[0]['buro_name']) : 'Не указано';
                                     ?>
                                 </td>
-                                <td><?php echo isset($pep['TIMEORDER']) ? date('d.m.Y H:i', strtotime($pep['TIMEORDER'])) : 'Не указано'; ?></td>
-                                <td><?php echo isset($pep['TIMEPLAN']) ? date('d.m.Y', strtotime($pep['TIMEPLAN'])) : 'Не указано'; ?></td>
-                                <td>
+                                <td <?php echo $cell_style; ?>><?php echo isset($pep['TIMEORDER']) ? date('d.m.Y H:i', strtotime($pep['TIMEORDER'])) : 'Не указано'; ?></td>
+                                <td <?php echo $cell_style; ?>><?php echo isset($pep['TIMEPLAN']) ? date('d.m.Y', strtotime($pep['TIMEPLAN'])) : 'Не указано'; ?></td>
+                                <td <?php echo $cell_style; ?>>
                                     <?php
                                     if (empty($pep['GUEST_CARD_NUMBER'])) {
                                         echo HTML::anchor(
@@ -208,3 +265,6 @@ if ($alert) { ?>
         <?php } ?>
     </div>
 </div>
+<?php
+    echo 'mode=' . $mode;
+?>

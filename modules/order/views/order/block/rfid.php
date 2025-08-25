@@ -74,10 +74,10 @@ if (count($cardlist) > 0) {
        value="<?php if (isset($card)) echo Arr::get($card, 'ID_CARD'); ?>" 
        title="<?php echo $title; ?>" 
        style="width: 120px;"
-       pattern="^[0-9A-Fa-f]{10}$"
+       pattern="^[0-9A-Fa-f]{10}|^$"
        minlength="10"
        maxlength="10"
-       required
+       
        oninvalid="this.setCustomValidity('Введите 10-значный HEX-код (0-9, A-F)')"
        oninput="this.setCustomValidity('')"
 />

@@ -148,50 +148,54 @@ class Controller_Order extends Controller_Template
 	*режим работы (гость или архив) заданы в this и в сессии)
 	*/
 public function action_index($filter = null)
-    {
-        $po = Model::factory('Order');
-        $mode = Session::instance()->get('mode');
-        $user = new User();
-        $id_pep = $user->id_pep;
-        $user_role = $user->id_role;
-        $guest = new Guest2();
-        $org = $guest->getOrganizations();
+{
+    $po = Model::factory('Order');
+    $mode = Session::instance()->get('mode');
+    $user = new User();
+    $id_pep = $user->id_pep;
+    $user_role = $user->id_role;
+    $guest = new Guest2();
+    $org = $guest->getOrganizations();
 
-        $buro = new Buro();
-        $access_names = [];
-        $current_accesses = [];
+    $buro = new Buro();
+    $access_names = [];
+    $current_accesses = [];
 
-        if ($user_role == 2) {
-            $user_buros = $buro->getIdBuroForUser($id_pep);
-            if (!empty($user_buros)) {
-                foreach ($user_buros as $user_buro) {
-                    $accesses = $buro->getBuroAccesses($user_buro['id_buro']);
-                    $current_accesses = array_merge($current_accesses, Arr::pluck($accesses, 'id_accessname'));
-                }
-                $current_accesses = array_unique($current_accesses);
-                $access_names = $buro->getAccessName();
+    if ($user_role == 2) {
+        $user_buros = $buro->getIdBuroForUser($id_pep);
+        if (!empty($user_buros)) {
+            foreach ($user_buros as $user_buro) {
+                $accesses = $buro->getBuroAccesses($user_buro['id_buro']);
+                $current_accesses = array_merge($current_accesses, Arr::pluck($accesses, 'id_accessname'));
             }
+            $current_accesses = array_unique($current_accesses);
+            $access_names = $buro->getAccessName();
         }
-
-        $list = $po->getListNowOrder($id_pep, $mode, $user_role);
-
-        $fl = $this->session->get('alert');
-        $arrAlert = $this->session->get('arrAlert');
-        $this->session->delete('alert');
-        $this->session->delete('arrAlert');
-        $mode = 'neworder';
-		//echo Debug::vars('lala', $list);exit;
-
-        $this->template->content = View::factory('order/list')
-            ->bind('mode', $mode)
-            ->bind('people', $list)
-            ->bind('alert', $fl)
-            ->bind('arrAlert', $arrAlert)
-            ->bind('filter', $filter)
-            ->bind('user', $user)
-            ->bind('org', $org)
-            ->bind('pagination', $pagination);
     }
+
+    // Get show_all parameter from GET request
+    $show_all = isset($_GET['show_all']) && $_GET['show_all'] == 1;
+
+    // Pass show_all to the model
+    $list = $po->getListNowOrder($id_pep, $mode, $user_role, '', $show_all);
+
+    $fl = $this->session->get('alert');
+    $arrAlert = $this->session->get('arrAlert');
+    $this->session->delete('alert');
+    $this->session->delete('arrAlert');
+    $mode = 'neworder';
+    //echo Debug::vars('lala', $list);exit;
+
+    $this->template->content = View::factory('order/list')
+        ->bind('mode', $mode)
+        ->bind('people', $list)
+        ->bind('alert', $fl)
+        ->bind('arrAlert', $arrAlert)
+        ->bind('filter', $filter)
+        ->bind('user', $user)
+        ->bind('org', $org)
+        ->bind('pagination', $pagination);
+}
 	/*
 	обработка POST-запросов
 	11.11.2023 сохранение информации по гостю.
@@ -627,10 +631,14 @@ public function action_index($filter = null)
 					//карта выдана сотруднику с id_pep=$check
 					
 					$anypeople=new Guest2($check);
+                    //echo Debug::vars('630', $anypeople);exit;
 					
 					//Session::instance()->set('alert', __('contact.key_occuped_'.$check));
 					$arrAlert[]=array('actionResult'=>3, 'actionDesc'=>'guest.noDocForSave');
-					$alert = __('Ошибка выдачи карты', array());
+					$alert = __('Ошибка выдачи карты. Карта выдана гостю: :name :surname :pn' , array(':name'=>$anypeople->name,
+                ':surname'=>$anypeople->surname, ':pn'=>$anypeople->patronymic));
+                //$alert = __('Ошибка выдачи карты '.HTML::anchor('order/edit/'.$anypeople->id_pep, '888').':name :surname :pn' , array(':name'=>$anypeople->name,
+               // ':surname'=>$anypeople->surname, ':pn'=>$anypeople->patronymic));
 					Session::instance()->set('e_mess', array('result'=>$alert));
 				//throw new Exception($alert, 274);
 				}
@@ -669,6 +677,9 @@ public function action_index($filter = null)
 		$guest = new Guest2();
 		//echo Debug::vars('670', $guest);exit;
 		$org = $guest->getOrg();
+        $pd = new PD($id_pep);
+        $signature_url = $pd->getSignatureUrl($id_pep);
+        $signature_path = $pd->checkSignature($id_pep);
 
         $org_tree = Model::Factory('Company')->getOrgList();
         $fl = $this->session->get('alert');
@@ -682,6 +693,25 @@ public function action_index($filter = null)
             'id_pep' => $id_pep,
             '_is_active' => 'edit',
         ));
+
+        $guest = new Guest2();
+    $person = $guest->getPersonDetails($id_pep);
+    
+    
+    
+    $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+    $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+    $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+    
+    // Проверяем кодировку
+    if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
+        $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+        $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+        $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+    }
+    
+    $full_name = trim("$surname $name $patronymic");
+    $full_name = preg_replace('/\s+/', ' ', $full_name);
 
         $key = new Keyk();
         $cardlist = $key->getListByPeople($id_pep, 1);
@@ -715,9 +745,12 @@ public function action_index($filter = null)
             ->bind('id_pep', $id_pep)
             ->bind('contact', $contact)
             ->bind('alert', $fl)
+            ->bind('signature_url', $signature_url)
+            ->bind('signature_path', $signature_path)
             ->bind('arrAlert', $arrAlert)
             ->bind('contact_acl', $contact_acl)
             ->bind('org_tree', $org_tree)
+            ->bind('full_name', $full_name)
             ->bind('force_org', $force_org)
             ->bind('check_acl', $check_acl)
             ->bind('companies', $companies)
@@ -1305,30 +1338,35 @@ public function action_settings() {
     
     $uniqueIdPep = $buro->getUniqueIdPepFromBuConf();
     
-    $peopleWithBuro = [];
+    $peopleWithBuro = array();
     foreach ($uniqueIdPep as $id_pep) {
         $person = $guest->getPersonById($id_pep);
         
         if ($person) {
             $userBuros = $buro->getIdBuroForUser($person['ID_PEP']);
-            $buroRoles = [];
+            $buroRoles = array();
             
             foreach ($userBuros as $userBuro) {
                 $role = $buro->getRoleById($userBuro['id_role']);
-                $buroRoles[$userBuro['id_buro']] = [
+                $buroRoles[$userBuro['id_buro']] = array(
                     'role_name' => isset($role[0]['name']) ? $role[0]['name'] : '-',
                     'role_id' => $userBuro['id_role']
-                ];
+                );
             }
             
             $person['buros'] = $buroRoles;
             $peopleWithBuro[] = $person;
         }
     }
-    
+
+    // Загрузка настроек (путь и текст согласия)
+    $settings = $this->getSettings();
+
     $this->template->content = View::factory('order/settings')
         ->set('buros', $buros)
-        ->set('people', $peopleWithBuro);
+        ->set('people', $peopleWithBuro)
+        ->set('upload_dir', $settings['upload_dir'])
+        ->set('consent_text', $settings['consent_text']);
 }
 
 public function action_buro_details()
@@ -1525,114 +1563,373 @@ public function action_update_buro()
     $this->redirect('order/buro_details/'.$id_buro);
 }
 
-public function action_PersonalData()
-    {
-		//echo Debug::vars('1323');exit;
-        $id_pep = $this->request->param('id');
-        
-        // Создаем экземпляр модели Guest2
-        $guest = new Guest2();
-        
-        // Получаем данные о человеке
-        $person = $guest->getPersonDetails($id_pep);
-        
-        if (empty($person)) {
-            $this->response->body(json_encode(['status' => 'error', 'message' => 'Пользователь не найден']));
-            return;
-        }
-
-        // Формируем ФИО, проверяем и нормализуем данные
-        $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
-        $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
-        $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
-
-        // Преобразуем кодировку, если нужно
-        if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
-            $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
-            $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
-            $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
-        }
-
-        $full_name = trim("$surname $name $patronymic");
-        $full_name = preg_replace('/\s+/', ' ', $full_name);
-
-        // Передаем данные в представление
-        $view = View::factory('order/PersonalData')
-            ->set('id_pep', $id_pep)
-			->set('surname', $surname)
-			->set('name', $name)
-			->set('patronymic', $patronymic)
-            ->set('full_name', $full_name);
-
-        $this->template->content = $view;
+public function action_save_settings() {
+    if ($this->request->method() !== Request::POST) {
+        HTTP::redirect('order/settings?settings_error=' . urlencode('Недопустимый метод запроса'));
+        return;
     }
 
-    public function action_save_signature()
-    {
-		//echo Debug::vars('1361');exit;
-        $this->auto_render = false;
-        $this->response->headers('Content-Type', 'application/json');
+    $upload_dir = $this->request->post('upload_dir');
+    $consent_text = $this->request->post('consent_text');
 
-        $id_pep = $this->request->param('id');
-        if ($this->request->method() !== Request::POST) {
-            $this->response->body(json_encode(['status' => 'error', 'message' => 'Недопустимый метод запроса']));
+    if (empty($upload_dir) || empty($consent_text)) {
+        HTTP::redirect('order/settings?settings_error=' . urlencode('Не все данные предоставлены'));
+        return;
+    }
+
+    // Проверяем существует ли папка и можем ли мы в неё писать
+    if (!is_dir($upload_dir)) {
+        if (!mkdir($upload_dir, 0777, true)) {
+            HTTP::redirect('order/settings?settings_error=' . urlencode('Не удалось создать папку: ' . $upload_dir));
             return;
         }
+    }
 
-        $signature_data = $this->request->post('signature_data');
-        if (empty($signature_data)) {
-            $this->response->body(json_encode(['status' => 'error', 'message' => 'Подпись не предоставлена']));
+    if (!is_writable($upload_dir)) {
+        HTTP::redirect('order/settings?settings_error=' . urlencode('Папка не доступна для записи: ' . $upload_dir));
+        return;
+    }
+
+    // Сохраняем в файл
+    $settings = array(
+        'upload_dir' => $upload_dir,
+        'consent_text' => $consent_text
+    );
+    
+    if (file_put_contents(DOCROOT . 'settings.json', json_encode($settings))) {
+        HTTP::redirect('order/settings?settings_saved=1');
+    } else {
+        HTTP::redirect('order/settings?settings_error=' . urlencode('Ошибка записи в файл настроек'));
+    }
+}
+
+public function action_browse_folders() {
+    $this->auto_render = false;
+    $this->response->headers('Content-Type', 'application/json');
+
+    if ($this->request->method() !== Request::POST) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса')));
+        return;
+    }
+
+    $path = $this->request->post('path');
+    if (empty($path)) {
+        $path = dirname($_SERVER['SCRIPT_FILENAME']);
+    }
+
+    // Защита от выхода за пределы сервера
+    $realPath = realpath($path);
+    $serverRoot = realpath($_SERVER['DOCUMENT_ROOT']);
+    
+    if ($realPath === false || strpos($realPath, $serverRoot) !== 0) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недоступный путь')));
+        return;
+    }
+
+    if (!is_dir($realPath) || !is_readable($realPath)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка недоступна для чтения')));
+        return;
+    }
+
+    $folders = array();
+    $items = scandir($realPath);
+    
+    if ($items !== false) {
+        foreach ($items as $item) {
+            if ($item !== '.' && $item !== '..' && is_dir($realPath . DIRECTORY_SEPARATOR . $item)) {
+                $folders[] = $item;
+            }
+        }
+        sort($folders);
+    }
+
+    $this->response->body(json_encode(array(
+        'status' => 'success', 
+        'folders' => $folders,
+        'current_path' => $realPath
+    )));
+}
+
+public function action_create_folder() {
+    $this->auto_render = false;
+    $this->response->headers('Content-Type', 'application/json');
+
+    if ($this->request->method() !== Request::POST) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса')));
+        return;
+    }
+
+    $parentPath = $this->request->post('parent_path');
+    $folderName = $this->request->post('folder_name');
+
+    if (empty($parentPath) || empty($folderName)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Не указан путь или имя папки')));
+        return;
+    }
+
+    // Защита от выхода за пределы сервера
+    $realParentPath = realpath($parentPath);
+    $serverRoot = realpath($_SERVER['DOCUMENT_ROOT']);
+    
+    if ($realParentPath === false || strpos($realParentPath, $serverRoot) !== 0) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недоступный родительский путь')));
+        return;
+    }
+
+    // Очистка имени папки от опасных символов
+    $folderName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $folderName);
+    
+    if (empty($folderName)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимое имя папки')));
+        return;
+    }
+
+    $newFolderPath = $realParentPath . DIRECTORY_SEPARATOR . $folderName;
+
+    if (file_exists($newFolderPath)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка уже существует')));
+        return;
+    }
+
+    if (mkdir($newFolderPath, 0777)) {
+        $this->response->body(json_encode(array('status' => 'success', 'message' => 'Папка создана', 'path' => $newFolderPath)));
+    } else {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Ошибка создания папки')));
+    }
+}
+
+public function action_PersonalData() {
+    $id_pep = $this->request->param('id');
+    
+    $guest = new Guest2();
+    
+    $person = $guest->getPersonDetails($id_pep);
+    
+    if (empty($person)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Пользователь не найден')));
+        return;
+    }
+
+    $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+    $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+    $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+
+    // Проверяем кодировку и конвертируем если нужно
+    if (!mb_check_encoding($surname, 'UTF-8')) {
+        $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+    }
+    if (!mb_check_encoding($name, 'UTF-8')) {
+        $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+    }
+    if (!mb_check_encoding($patronymic, 'UTF-8')) {
+        $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+    }
+
+    $full_name = trim("$surname $name $patronymic");
+    $full_name = preg_replace('/\s+/', ' ', $full_name);
+
+    // Логируем для отладки
+    Kohana::$log->add(Log::DEBUG, 'PersonalData: Full name (UTF-8): ' . $full_name);
+    Kohana::$log->add(Log::DEBUG, 'PersonalData: Full name encoding valid: ' . (mb_check_encoding($full_name, 'UTF-8') ? 'YES' : 'NO'));
+
+    // Загрузка настроек для текста согласия
+    $settings = $this->getSettings();
+
+    $view = View::factory('order/PersonalData')
+        ->set('id_pep', $id_pep)
+        ->set('surname', $surname)
+        ->set('name', $name)
+        ->set('patronymic', $patronymic)
+        ->set('full_name', $full_name)
+        ->set('consent_text', $settings['consent_text']);
+
+    $this->template->content = $view;
+}
+
+public function action_save_signature() {
+    $this->auto_render = false;
+    $this->response->headers('Content-Type', 'application/json');
+    $id_pep = $this->request->param('id');
+    if ($this->request->method() !== Request::POST) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса')));
+        return;
+    }
+    $signature_data = $this->request->post('signature_data');
+    if (empty($signature_data)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Подпись не предоставлена')));
+        return;
+    }
+    $signature_data = str_replace('data:image/jpeg;base64,', '', $signature_data);
+    $signature_data = str_replace(' ', '+', $signature_data);
+    $image = base64_decode($signature_data);
+    $settings = $this->getSettings();
+    $upload_dir = $settings['upload_dir'];
+    if (!is_dir($upload_dir)) {
+        if (!mkdir($upload_dir, 0777, true)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Не удалось создать папку для сохранения')));
             return;
         }
-
-        $signature_data = str_replace('data:image/jpeg;base64,', '', $signature_data);
-        $signature_data = str_replace(' ', '+', $signature_data);
-        $image = base64_decode($signature_data);
-
-        $upload_dir = DOCROOT . 'downloads';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-
-        $guest = new Guest2();
-        $person = $guest->getPersonDetails($id_pep);
-        if (empty($person)) {
-            $full_name = 'Unknown_Unknown_Unknown';
+    }
+    if (!is_writable($upload_dir)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка недоступна для записи')));
+        return;
+    }
+    $guest = new Guest2();
+    $person = $guest->getPersonDetails($id_pep);
+    if (empty($person)) {
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Пользователь не найден')));
+        return;
+    }
+    $pd = new PD($id_pep);
+    $filename_utf8 = $pd->generateFileName($id_pep, $person);
+    $filename_cp1251 = iconv('UTF-8', 'CP1251//IGNORE', $filename_utf8);
+    $filepath_cp1251 = $upload_dir . DIRECTORY_SEPARATOR . $filename_cp1251;
+    $counter = 1;
+    $base_filename_utf8 = pathinfo($filename_utf8, PATHINFO_FILENAME);
+    $extension = pathinfo($filename_utf8, PATHINFO_EXTENSION);
+    while (file_exists($filepath_cp1251)) {
+        $filename_utf8 = $base_filename_utf8 . '_' . $counter . '.' . $extension;
+        $filename_cp1251 = iconv('UTF-8', 'CP1251//IGNORE', $filename_utf8);
+        $filepath_cp1251 = $upload_dir . DIRECTORY_SEPARATOR . $filename_cp1251;
+        $counter++;
+    }
+    Kohana::$log->add(Log::DEBUG, 'save_signature: Attempting to save signature to ' . $filepath_cp1251);
+    Kohana::$log->add(Log::DEBUG, 'save_signature: File name (UTF-8): ' . $filename_utf8);
+    Kohana::$log->add(Log::DEBUG, 'save_signature: File name (CP1251): ' . $filename_cp1251);
+    if (!is_writable($upload_dir)) {
+        Kohana::$log->add(Log::ERROR, 'save_signature: Directory not writable: ' . $upload_dir);
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Директория недоступна для записи')));
+        return;
+    }
+    $bytes_written = file_put_contents($filepath_cp1251, $image);
+    if ($bytes_written !== false && $bytes_written > 0) {
+        if (file_exists($filepath_cp1251) && filesize($filepath_cp1251) > 0) {
+            Kohana::$log->add(Log::INFO, 'save_signature: Signature saved successfully to ' . $filepath_cp1251 . ' (' . $bytes_written . ' bytes)');
+            $filepath_utf8 = iconv('CP1251', 'UTF-8//IGNORE', $filepath_cp1251);
+            $filename_utf8 = iconv('CP1251', 'UTF-8//IGNORE', $filename_cp1251);
+            $this->response->body(json_encode(array(
+                'status' => 'success',
+                'message' => 'Подпись сохранена',
+                'file' => $filename_utf8,
+                'path' => $filepath_utf8,
+                'size' => filesize($filepath_cp1251)
+            ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         } else {
-            $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
-            $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
-            $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
-
-            if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
-                $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
-                $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
-                $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
-            }
-
-            $full_name = trim("$surname_$name_$patronymic");
+            Kohana::$log->add(Log::ERROR, 'save_signature: File was written but not found: ' . $filepath_cp1251);
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Файл был записан, но не найден')));
         }
-        $full_name = preg_replace('/[^A-Za-z0-9_]/', '_', $full_name);
-
-        $filename = $id_pep . '.jpg';
-		//echo Debug::vars('1410', $filename);exit;
-        $filepath = $upload_dir . DIRECTORY_SEPARATOR . $filename;
-
-        if (file_exists($filepath)) {
-            $counter = 1;
-            $base_filename = pathinfo($filepath, PATHINFO_FILENAME);
-            $extension = pathinfo($filepath, PATHINFO_EXTENSION);
-            while (file_exists($filepath)) {
-                $filename = $base_filename . '_' . $counter . '.' . $extension;
-                $filepath = $upload_dir . DIRECTORY_SEPARATOR . $filename;
-                $counter++;
-            }
-        }
-
-        // Сохранение файла
-        file_put_contents($filepath, $image);
-
-        $this->response->body(json_encode(['status' => 'success', 'message' => 'Подпись сохранена', 'file' => $filename]));
+    } else {
+        $last_error = error_get_last();
+        $error_message = $last_error ? $last_error['message'] : 'Неизвестная ошибка';
+        Kohana::$log->add(Log::ERROR, 'save_signature: Failed to save signature to ' . $filepath_cp1251 . '. Error: ' . $error_message);
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Ошибка записи файла: ' . $error_message)));
     }
+}
+
+
+public function action_view_signature() {
+    $id_pep = $this->request->param('id');
+    
+    if (empty($id_pep)) {
+        $this->response->body('ID пользователя не указан');
+        return;
+    }
+    
+    $pd = new PD($id_pep);
+    $signature_path = $pd->checkSignature($id_pep);
+    //echo Debug::vars('1837', $signature_path);exit;
+    
+    if ($signature_path === false || !file_exists($signature_path)) {
+        $this->response->body('Подпись не найдена');
+        return;
+    }
+    
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime_type = finfo_file($finfo, $signature_path);
+    finfo_close($finfo);
+    
+    if ($mime_type === false) {
+        $mime_type = 'image/jpeg';
+    }
+    
+    $this->auto_render = false;
+    
+    $this->response->headers('Content-Type', $mime_type);
+    $this->response->headers('Content-Length', filesize($signature_path));
+    $this->response->headers('Cache-Control', 'no-cache, must-revalidate');
+    
+    $this->response->body(file_get_contents($signature_path));
+}
+
+public function action_view_signature_page() {
+    $id_pep = $this->request->param('id');
+    
+    if (empty($id_pep)) {
+        Session::instance()->set('flash_error', 'ID пользователя не указан');
+        $this->redirect('dashboard');
+        return;
+    }
+    
+    $pd = new PD($id_pep);
+    $signature_path = $pd->checkSignature($id_pep);
+    
+    if ($signature_path === false || !file_exists($signature_path)) {
+        Session::instance()->set('flash_error', 'Подпись не найдена');
+        $this->redirect('dashboard');
+        return;
+    }
+    
+    $signature_url = $pd->getSignatureUrl($id_pep);
+    
+    $guest = new Guest2();
+    $person = $guest->getPersonDetails($id_pep);
+    
+    if (empty($person)) {
+        Session::instance()->set('flash_error', 'Данные пользователя не найдены');
+        $this->redirect('dashboard');
+        return;
+    }
+    
+    $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+    $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+    $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+    
+    if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
+        $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+        $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+        $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+    }
+    
+    $full_name = trim("$surname $name $patronymic");
+    $full_name = preg_replace('/\s+/', ' ', $full_name);
+    
+    $view = View::factory('order/view_signature')
+        ->set('id_pep', $id_pep)
+        ->set('full_name', $full_name)
+        ->set('signature_url', $signature_url)
+        ->set('signature_path', $signature_path);
+    
+    $this->template->content = $view;
+}
+
+
+private function getSettings() {
+    $file = DOCROOT . 'settings.json';
+    if (file_exists($file)) {
+        $json = file_get_contents($file);
+        $settings = json_decode($json, true);
+        if ($settings === null) {
+            // Если JSON поврежден, используем дефолтные значения
+            //$settings = $this->getDefaultSettings();
+            file_put_contents($file, json_encode($settings));
+        }
+    } else {
+        // Дефолтные значения
+        //$settings = $this->getDefaultSettings();
+        //file_put_contents($file, json_encode($settings));
+    }
+    return $settings;
+}
 
 	public function action_addAccessBuro()
 {
@@ -1686,6 +1983,139 @@ public function action_historyGuest()
 			->bind('pagination', $pagination);
     }
 
+	public function action_export($mode = null)
+    {
+        $user = new User();
+        $id_pep = $user->id_pep;
+        $user_role = $user->id_role;
+        
+        // Получаем режим из сессии, если не передан в параметрах
+        $mode = $this->request->param('mode');
+        
+        $po = Model::factory('Order');
+        $list = $po->getListNowOrder($id_pep, $mode, $user_role);
+        
+        // Устанавливаем заголовки для скачивания CSV файла
+        header('Content-Type: text/csv; charset=windows-1251');
+        header('Content-Disposition: attachment; filename="export_' . $mode . '_' . date('Y-m-d_H-i-s') . '.csv"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Открываем поток вывода
+        $output = fopen('php://output', 'w');
+        
+        if ($mode === 'archive_mode') {
+            // Заголовки для архивного режима (только ФИО и Номер документа)
+            $headers = array(
+                iconv('UTF-8', 'Windows-1251', 'ФИО гостя'),
+                iconv('UTF-8', 'Windows-1251', 'Номер документа')
+            );
+            fputcsv($output, $headers, ';');
+            
+            $pd = new PD(0);
+            foreach ($list as $pep) {
+                $surname = isset($pep['GUEST_SURNAME']) ? $pep['GUEST_SURNAME'] : '';
+                $name = isset($pep['GUEST_NAME']) ? $pep['GUEST_NAME'] : '';
+                $patronymic = isset($pep['GUEST_PATRONYMIC']) ? $pep['GUEST_PATRONYMIC'] : '';
+                $fio = trim("$surname $name $patronymic");
+                $id_guest = isset($pep['ID_GUEST']) ? $pep['ID_GUEST'] : 0;
+                
+                // Обработка номера документа (аналогично List.php)
+                $numdoc = isset($pep['NUMDOC']) ? $pep['NUMDOC'] : '';
+                $doc_display = '-';
+                if ($numdoc && $numdoc !== '#@') {
+                    $parts = explode('#', $numdoc);
+                    $series = !empty($parts[0]) ? $parts[0] : '-';
+                    $number = '-';
+                    $id_doc = 0;
+                    $doc_type = 'Неизвестный тип';
+
+                    if (isset($parts[1])) {
+                        $number_parts = explode('@', $parts[1]);
+                        $number = !empty($number_parts[0]) ? $number_parts[0] : '-';
+                        $id_doc = isset($number_parts[1]) ? (int)$number_parts[1] : 0;
+                        $docs = Documents::getDoc();
+                        $doc_type = ($id_doc && isset($docs[$id_doc])) 
+                            ? $docs[$id_doc]['docname'] 
+                            : 'Неизвестный тип';
+                    }
+
+                    if ($series !== '-' || $number !== '-' || $doc_type !== 'Неизвестный тип') {
+                        $doc_display = 'Серия: ' . $series . 
+                                       ' Номер: ' . $number . 
+                                       ' Тип: ' . iconv('UTF-8', 'Windows-1251', $doc_type);
+                    } else {
+                        $doc_display = '-';
+                    }
+                } else {
+                    $doc_display = '-';
+                }
+                
+                $row = array(
+                    $fio, // уже в CP1251
+                    iconv('UTF-8', 'Windows-1251', $doc_display)
+                );
+                
+                fputcsv($output, $row, ';');
+            }
+            
+        } else {
+            // Заголовки для гостевого режима (полная таблица)
+            $headers = array(
+                'ID',
+                iconv('UTF-8', 'Windows-1251', 'ФИО гостя'),
+                iconv('UTF-8', 'Windows-1251', 'Номер карты'),
+                iconv('UTF-8', 'Windows-1251', 'Фамилия заказчика'),
+                iconv('UTF-8', 'Windows-1251', 'Компания'),
+                iconv('UTF-8', 'Windows-1251', 'Бюро пропусков'),
+                iconv('UTF-8', 'Windows-1251', 'Время заказа'),
+                iconv('UTF-8', 'Windows-1251', 'Запланированное время визита')
+            );
+            fputcsv($output, $headers, ';');
+            
+            foreach ($list as $pep) {
+                $surname = isset($pep['GUEST_SURNAME']) ? $pep['GUEST_SURNAME'] : '';
+                $name = isset($pep['GUEST_NAME']) ? $pep['GUEST_NAME'] : '';
+                $patronymic = isset($pep['GUEST_PATRONYMIC']) ? $pep['GUEST_PATRONYMIC'] : '';
+                $fio = trim("$surname $name $patronymic");
+                
+                $card_number = isset($pep['GUEST_CARD_NUMBER']) ? $pep['GUEST_CARD_NUMBER'] : '';
+                $timestart = isset($pep['CREATEDAT']) ? date('d.m.Y H:i', strtotime($pep['CREATEDAT'])) : '';
+                $card_output = '';
+                if ($card_number) $card_output .= $card_number;
+                if ($timestart) $card_output .= ($card_output ? ' ' : '') . $timestart;
+                
+                // Получаем название организации
+                $org = new Company($pep['ID_ORG']);
+                $org_name = $org->name ? $org->name : iconv('UTF-8', 'Windows-1251', 'Не указано');
+                
+                // Получаем бюро пропусков
+                $buro = new Buro();
+                $guestBuro = $buro->getGuestBuro($pep['ID_GUEST']); 
+                $buro_name = !empty($guestBuro) ? iconv('UTF-8', 'Windows-1251', $guestBuro[0]['buro_name']) : iconv('UTF-8', 'Windows-1251', 'Не указано');
+                
+                // Форматируем даты как текст, чтобы избежать проблем с отображением
+                $timeorder = isset($pep['TIMEORDER']) ? ("'" . date('d.m.Y H:i', strtotime($pep['TIMEORDER']))) : iconv('UTF-8', 'Windows-1251', 'Не указано');
+                $timeplan = isset($pep['TIMEPLAN']) ? ("'" . date('d.m.Y', strtotime($pep['TIMEPLAN']))) : iconv('UTF-8', 'Windows-1251', 'Не указано');
+                
+                $row = array(
+                    $pep['ID_GUESTORDER'],
+                    $fio, // уже в CP1251
+                    $card_output,
+                    isset($pep['P_SURNAME']) ? $pep['P_SURNAME'] : '',
+                    $org_name,
+                    $buro_name,
+                    $timeorder,
+                    $timeplan
+                );
+                
+                fputcsv($output, $row, ';');
+            }
+        }
+        
+        fclose($output);
+        exit();
+    }
 
 
 

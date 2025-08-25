@@ -13,7 +13,6 @@ if ($flash_error) {
 include Kohana::find_file('views', 'alert_line');
 
 $guest = new Guest2($id_pep);
-//echo Debug::vars('16', $guest);exit;
 $id_card = isset($cardlist[0]['ID_CARD']) ? $cardlist[0]['ID_CARD'] : null;
 $key = new Keyk($id_card);
 $mode = isset($mode) ? $mode : 'guest_mode';
@@ -89,6 +88,8 @@ $user = new User();
                                     include Kohana::find_file('views', 'order/block/rfid');
                                 }
                                 include Kohana::find_file('views', 'order/block/card_dates');
+                                echo '<br>';
+                                include Kohana::find_file('views', 'order/block/forPD');
                                 break;
                             case 'neworder':
                                 include Kohana::find_file('views', 'order/block/rfid');
@@ -101,6 +102,8 @@ $user = new User();
                                 include Kohana::find_file('views', 'order/block/rfid');
                                 echo '<br>';
                                 include Kohana::find_file('views', 'order/block/card_dates');
+                                echo '<br>';
+                                include Kohana::find_file('views', 'order/block/forPD');
                                 break;
                         }
                         ?>
@@ -174,7 +177,7 @@ $user = new User();
                                 'onclick' => "this.form.elements.todo.value='consent'"
                             ));
                         } else {
-                            echo '<a href="/index.php/order/view_signature/' . htmlspecialchars($id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
+                            echo '<a href="' . URL::site('order/view_signature_page/' . $id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
                         }
                         
                         if (!empty($cardlist[0]['ID_CARD'])) {
@@ -211,7 +214,7 @@ $user = new User();
                         ));
                     }
                     echo Form::close();
-                    '<br>';
+                    echo '<br>';
                     echo Form::open('order/historyGuest/' . $id_pep, array('class' => 'history-form'));
                     echo Form::hidden('todo', 'viewhistory');
                     echo Form::submit('viewhistory', __('История'), array(
@@ -226,26 +229,34 @@ $user = new User();
                         echo Form::submit('reissue', __('Обновить233'), array(
                             'onclick' => "this.form.elements.todo.value='reissue'"
                         ));
-                        
-                        
-
-                        $pd = new PD($id_pep);
-                        $signature_file = $pd->checkSignature($id_pep);
-                        if ($signature_file === false || !file_exists($signature_file)) {
-                            echo Form::submit('consent', __('Согласие'), array(
-                                'onclick' => "this.form.elements.todo.value='consent'"
-                            ));
-                        } else {
-                            echo '<a href="/index.php/order/view_signature/' . htmlspecialchars($id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
-                        }
-                        
                         if (!empty($cardlist[0]['ID_CARD'])) {
+                            echo Form::open();
+                            echo Form::hidden('todo', 'forceexit');
                             echo Form::submit('forceexit', __('Забрать карту!'), array(
                                 'onclick' => "this.form.elements.todo.value='forceexit'"
                             ));
-                    // '<br>';
-                    
                         }
+                        echo Form::close();
+                        
+                        $pd = new PD($id_pep);
+                        $signature_file = $pd->checkSignature($id_pep);
+                        if ($signature_file === false || !file_exists($signature_file)) {
+                            echo Form::open('order/PersonalData/' . $id_pep, array('class'=>'consent'));
+                            echo Form::hidden('todo', 'consent');
+                            echo Form::submit('consent', __('Согласие'), array(
+                                'onclick' => "this.form.elements.todo.value='consent'"
+                            ));
+                            echo Form::close();
+                        } else {
+                            echo Form::open('order/view_signature_page/'. $id_pep, array('class'=>'signature'));
+                            echo Form::hidden('todo', 'signature');
+                            echo Form::submit('signature', __('Посмотреть согласие'), array(
+                                'onclick'=> "this.form.elements.todo.value='signature'"
+                            ));
+                           //echo '<a href="' . URL::site('order/view_signature_page/' . $id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
+                            echo Form::close();
+                        }
+                        
                     } else {
                         echo Form::hidden('todo', 'update');
                         echo Form::submit('update', __('Обновить гостя'));

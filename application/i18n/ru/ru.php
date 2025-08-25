@@ -408,7 +408,7 @@ return array
 	'guest.adddocOK'				=>'Номер документа :numdoc для :surname :name :patronymic зарегистрирован успешно.',
 	'guest.adddocErr'				=>'Номер документа :numdoc для :surname :name :patronymic не зарегистрирован. Ошибка.',
 	
-	'guest.forceexitOK'				=>'Отметка о выходе для гостя :surname :name :patronymic поставлена успешно.',
+	'guest.forceexitOK'				=>'Отметка о выходе для гостя :surname :name :patronymic поставлена успешно. Гость перемещен в архив',
 	'guest.forceexitErr'			=>'Отметка о выходе для гостя :surname :name :patronymic НЕ поставлена.',
 	
 	'guest.addRfidOk'				=>'Карта :id_card зарегистрирован успешно.',
