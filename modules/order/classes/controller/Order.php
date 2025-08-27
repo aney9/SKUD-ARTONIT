@@ -669,35 +669,31 @@ public function action_index($filter = null)
 	*/
 	
 
-	public function action_edit()
-    {
-        $id_pep = $this->request->param('id');
-        $mode = $this->request->param('mode');
-        $force_org = $this->request->query('id_org');
-		$guest = new Guest2();
-		//echo Debug::vars('670', $guest);exit;
-		$org = $guest->getOrg();
-        $pd = new PD($id_pep);
-        $signature_url = $pd->getSignatureUrl($id_pep);
-        $signature_path = $pd->checkSignature($id_pep);
-
-        $org_tree = Model::Factory('Company')->getOrgList();
-        $fl = $this->session->get('alert');
-        $arrAlert = $this->session->get('arrAlert');
-        
-        $this->session->delete('alert');
-        $this->session->delete('arrAlert');
-
-        $doc = new Documents();
-        $topbuttonbar = View::factory('order/topbuttonbar', array(
-            'id_pep' => $id_pep,
-            '_is_active' => 'edit',
-        ));
-
-        $guest = new Guest2();
+	public function action_edit() {
+    $id_pep = $this->request->param('id');
+    $mode = $this->request->param('mode');
+    $force_org = $this->request->query('id_org');
+    $guest = new Guest2();
+    $org = $guest->getOrg();
+    $pd = new PD($id_pep);
+    $signature_url = $pd->getSignatureUrl($id_pep);
+    $signature_path = $pd->checkSignature($id_pep);
+    $org_tree = Model::Factory('Company')->getOrgList();
+    $fl = $this->session->get('alert');
+    $arrAlert = $this->session->get('arrAlert');
+    
+    // Получаем настройки приложения
+    $app_settings = $this->getSettings();
+    
+    $this->session->delete('alert');
+    $this->session->delete('arrAlert');
+    $doc = new Documents();
+    $topbuttonbar = View::factory('order/topbuttonbar', array(
+        'id_pep' => $id_pep,
+        '_is_active' => 'edit',
+    ));
+    $guest = new Guest2();
     $person = $guest->getPersonDetails($id_pep);
-    
-    
     
     $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
     $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
@@ -712,61 +708,59 @@ public function action_index($filter = null)
     
     $full_name = trim("$surname $name $patronymic");
     $full_name = preg_replace('/\s+/', ' ', $full_name);
-
-        $key = new Keyk();
-        $cardlist = $key->getListByPeople($id_pep, 1);
-        $user = new User();
-
-        if ($user->id_role == 1 || $user->id_role == 2) {
-            if ($mode == 'guest_mode') {
-                $mode = 'buro';
-            }
+    $key = new Keyk();
+    $cardlist = $key->getListByPeople($id_pep, 1);
+    $user = new User();
+    if ($user->id_role == 1 || $user->id_role == 2) {
+        if ($mode == 'guest_mode') {
+            $mode = 'buro';
         }
-        
-        $buro = new Buro();
-        $buro_accesses = array();
-        $selected_access = '';
-        if ($user->id_role == 2 && !is_null($user->id_buro)) {
-            $access_ids = Arr::pluck($buro->getBuroAccesses($user->id_buro), 'id_accessname');
-            foreach ($access_ids as $access_id) {
-                $access_data = $buro->getAccessById($access_id);
-                if (!empty($access_data)) {
-                    $buro_accesses[] = $access_data;
-                }
-            }
-            $selected_access = $buro->getAccessUserByIdPep($id_pep);
-        }
-		$user = new User();
-		$id_pepp = $user->id_pep;
-		$buro_list = $buro->getIdBuroForUser($id_pepp);
-		//echo Debug::vars('691', $buro_list);exit;
-
-        $this->template->content = View::factory('order/edit')
-            ->bind('id_pep', $id_pep)
-            ->bind('contact', $contact)
-            ->bind('alert', $fl)
-            ->bind('signature_url', $signature_url)
-            ->bind('signature_path', $signature_path)
-            ->bind('arrAlert', $arrAlert)
-            ->bind('contact_acl', $contact_acl)
-            ->bind('org_tree', $org_tree)
-            ->bind('full_name', $full_name)
-            ->bind('force_org', $force_org)
-            ->bind('check_acl', $check_acl)
-            ->bind('companies', $companies)
-            ->bind('cardlist', $cardlist)
-            ->bind('mode', $mode)
-            ->bind('topbuttonbar', $topbuttonbar)
-            ->bind('surname', $surname)
-            ->bind('timeend', $timeend)
-            ->bind('timestart', $timestart)
-            ->bind('guest', $guest)
-            ->bind('buro_accesses', $buro_accesses)
-            ->bind('selected_access', $selected_access)
-			->bind('buro_list', $buro_list)
-			->bind('org', $org)
-            ->bind('user', $user);
     }
+    
+    $buro = new Buro();
+    $buro_accesses = array();
+    $selected_access = '';
+    if ($user->id_role == 2 && !is_null($user->id_buro)) {
+        $access_ids = Arr::pluck($buro->getBuroAccesses($user->id_buro), 'id_accessname');
+        foreach ($access_ids as $access_id) {
+            $access_data = $buro->getAccessById($access_id);
+            if (!empty($access_data)) {
+                $buro_accesses[] = $access_data;
+            }
+        }
+        $selected_access = $buro->getAccessUserByIdPep($id_pep);
+    }
+    $user = new User();
+    $id_pepp = $user->id_pep;
+    $buro_list = $buro->getIdBuroForUser($id_pepp);
+    
+    $this->template->content = View::factory('order/edit')
+        ->bind('id_pep', $id_pep)
+        ->bind('contact', $contact)
+        ->bind('alert', $fl)
+        ->bind('signature_url', $signature_url)
+        ->bind('signature_path', $signature_path)
+        ->bind('arrAlert', $arrAlert)
+        ->bind('contact_acl', $contact_acl)
+        ->bind('org_tree', $org_tree)
+        ->bind('full_name', $full_name)
+        ->bind('force_org', $force_org)
+        ->bind('check_acl', $check_acl)
+        ->bind('companies', $companies)
+        ->bind('cardlist', $cardlist)
+        ->bind('mode', $mode)
+        ->bind('topbuttonbar', $topbuttonbar)
+        ->bind('surname', $surname)
+        ->bind('timeend', $timeend)
+        ->bind('timestart', $timestart)
+        ->bind('guest', $guest)
+        ->bind('buro_accesses', $buro_accesses)
+        ->bind('selected_access', $selected_access)
+        ->bind('buro_list', $buro_list)
+        ->bind('org', $org)
+        ->bind('user', $user)
+        ->bind('app_settings', $app_settings);  // передаем настройки в представление
+}
 	public function _action__view()
 	{
 		$id=$this->request->param('id');
@@ -1359,14 +1353,15 @@ public function action_settings() {
         }
     }
 
-    // Загрузка настроек (путь и текст согласия)
+    // Загрузка настроек (путь, текст согласия и настройка согласия)
     $settings = $this->getSettings();
 
     $this->template->content = View::factory('order/settings')
         ->set('buros', $buros)
         ->set('people', $peopleWithBuro)
         ->set('upload_dir', $settings['upload_dir'])
-        ->set('consent_text', $settings['consent_text']);
+        ->set('consent_text', $settings['consent_text'])
+        ->set('require_consent_for_card', $settings['require_consent_for_card']);
 }
 
 public function action_buro_details()
@@ -1564,43 +1559,41 @@ public function action_update_buro()
 }
 
 public function action_save_settings() {
-    if ($this->request->method() !== Request::POST) {
-        HTTP::redirect('order/settings?settings_error=' . urlencode('Недопустимый метод запроса'));
-        return;
+    if ($this->request->method() === HTTP_Request::POST) {
+        $upload_dir = trim($this->request->post('upload_dir'));
+        $consent_text = trim($this->request->post('consent_text'));
+        $require_consent_for_card = (bool) $this->request->post('require_consent_for_card');
+        
+        $settings = array(
+            'upload_dir' => $upload_dir,
+            'consent_text' => $consent_text,
+            'require_consent_for_card' => $require_consent_for_card
+        );
+        
+        if ($this->saveSettings($settings)) {
+            $this->redirect('order/settings?settings_saved=1');
+        } else {
+            $this->redirect('order/settings?settings_error=' . urlencode('Не удалось сохранить настройки'));
+        }
+    } else {
+        $this->redirect('order/settings');
     }
+}
 
-    $upload_dir = $this->request->post('upload_dir');
-    $consent_text = $this->request->post('consent_text');
-
-    if (empty($upload_dir) || empty($consent_text)) {
-        HTTP::redirect('order/settings?settings_error=' . urlencode('Не все данные предоставлены'));
-        return;
-    }
-
-    // Проверяем существует ли папка и можем ли мы в неё писать
-    if (!is_dir($upload_dir)) {
-        if (!mkdir($upload_dir, 0777, true)) {
-            HTTP::redirect('order/settings?settings_error=' . urlencode('Не удалось создать папку: ' . $upload_dir));
-            return;
+private function saveSettings($settings) {
+    $settings_file = APPPATH . 'config' . DIRECTORY_SEPARATOR . 'app_settings.php';
+    $settings_dir = dirname($settings_file);
+    
+    if (!is_dir($settings_dir)) {
+        if (!mkdir($settings_dir, 0755, true)) {
+            return false;
         }
     }
-
-    if (!is_writable($upload_dir)) {
-        HTTP::redirect('order/settings?settings_error=' . urlencode('Папка не доступна для записи: ' . $upload_dir));
-        return;
-    }
-
-    // Сохраняем в файл
-    $settings = array(
-        'upload_dir' => $upload_dir,
-        'consent_text' => $consent_text
-    );
     
-    if (file_put_contents(DOCROOT . 'settings.json', json_encode($settings))) {
-        HTTP::redirect('order/settings?settings_saved=1');
-    } else {
-        HTTP::redirect('order/settings?settings_error=' . urlencode('Ошибка записи в файл настроек'));
-    }
+    $content = "<?php defined('SYSPATH') OR die('No direct access allowed.');\n\n";
+    $content .= "return " . var_export($settings, true) . ";\n";
+    
+    return file_put_contents($settings_file, $content) !== false;
 }
 
 public function action_browse_folders() {
@@ -1914,21 +1907,19 @@ public function action_view_signature_page() {
 
 
 private function getSettings() {
-    $file = DOCROOT . 'settings.json';
-    if (file_exists($file)) {
-        $json = file_get_contents($file);
-        $settings = json_decode($json, true);
-        if ($settings === null) {
-            // Если JSON поврежден, используем дефолтные значения
-            //$settings = $this->getDefaultSettings();
-            file_put_contents($file, json_encode($settings));
-        }
-    } else {
-        // Дефолтные значения
-        //$settings = $this->getDefaultSettings();
-        //file_put_contents($file, json_encode($settings));
+    $settings_file = APPPATH . 'config' . DIRECTORY_SEPARATOR . 'app_settings.php';
+    $default_settings = array(
+        'upload_dir' => dirname($_SERVER['SCRIPT_FILENAME']) . DIRECTORY_SEPARATOR . 'signatures',
+        'consent_text' => 'Я даю согласие на обработку персональных данных...',
+        'require_consent_for_card' => false  // новая настройка
+    );
+    
+    if (file_exists($settings_file)) {
+        $saved_settings = include $settings_file;
+        return array_merge($default_settings, $saved_settings);
     }
-    return $settings;
+    
+    return $default_settings;
 }
 
 	public function action_addAccessBuro()

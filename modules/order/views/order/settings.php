@@ -45,6 +45,25 @@ echo Form::close();
     <?php } ?>
     
     <form action="<?php echo URL::site('order/save_settings'); ?>" method="post" id="settings-form">
+        
+        <!-- Добавляем настройки согласия -->
+        <div class="setting-group">
+            <h4>Политика выдачи карт</h4>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="require_consent_for_card" value="0" 
+                           <?php echo !$require_consent_for_card ? 'checked' : ''; ?>>
+                    Выдача карт без согласия
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="require_consent_for_card" value="1" 
+                           <?php echo $require_consent_for_card ? 'checked' : ''; ?>>
+                    Выдача карт только с согласием
+                </label>
+            </div>
+        </div>
+        
         <label for="upload_dir">Путь к папке для сохранения файлов:</label><br>
         <div style="display: flex; align-items: center; margin-bottom: 10px;">
             <input type="text" id="upload_dir" name="upload_dir" value="<?php echo HTML::chars($upload_dir); ?>" style="width: 70%; margin-right: 10px;" readonly>
@@ -246,6 +265,25 @@ echo Form::close();
         border: 1px solid #f5c6cb;
     }
     
+    /* Стили для новых элементов */
+    .setting-group {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+    
+    .radio-group label {
+        display: block;
+        margin: 8px 0;
+        font-weight: normal;
+    }
+    
+    .radio-group input[type="radio"] {
+        margin-right: 8px;
+    }
+    
     /* Стили для модального окна */
     .modal {
         position: fixed;
@@ -297,17 +335,29 @@ echo Form::close();
         border-radius: 3px;
         display: flex;
         align-items: center;
+        border: 1px solid transparent;
     }
     .folder-item:hover {
         background-color: #e7e7e7;
+        border: 1px solid #ccc;
     }
-    .folder-item.selected {
-        background-color: #337ab7;
-        color: white;
+    .folder-item.parent {
+        font-weight: bold;
+        color: #666;
+    }
+    .folder-item.drives {
+        font-weight: bold;
+        color: #337ab7;
+        background-color: #f0f8ff;
+    }
+    .folder-item.drive {
+        color: #8b4513;
+        font-weight: bold;
     }
     .folder-icon {
         margin-right: 8px;
-        font-weight: bold;
+        font-size: 16px;
+        min-width: 20px;
     }
 </style>
 
@@ -322,6 +372,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentPathText = document.getElementById('current-path-text');
     const folderList = document.getElementById('folder-list');
     const newFolderInput = document.getElementById('new-folder-name');
+    
+    // Проверяем, что все необходимые элементы найдены
+    if (!browseButton || !modal || !closeButton || !selectButton || !createFolderButton || !uploadDirInput || !currentPathText || !folderList || !newFolderInput) {
+        console.error('Один или несколько необходимых элементов не найдены в DOM');
+        return;
+    }
     
     let currentPath = '<?php echo addslashes(dirname($_SERVER['SCRIPT_FILENAME'])); ?>';
     let selectedPath = currentPath;
@@ -355,56 +411,138 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function loadFolders(path) {
+    function loadDrives() {
+        console.log('Начало загрузки списка дисков');
+        
+        const formData = new FormData();
+        formData.append('show_drives', 'true');
+        
         fetch('<?php echo URL::site("order/browse_folders"); ?>', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'path=' + encodeURIComponent(path)
+            body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                displayFolders(data.folders, data.current_path);
-            } else {
-                alert('Ошибка загрузки папок: ' + data.message);
+        .then(response => {
+            console.log('HTTP статус:', response.status);
+            return response.text(); // Сначала получаем как текст
+        })
+        .then(text => {
+            console.log('Сырой ответ сервера:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('Распарсенный JSON:', data);
+                if (data.status === 'success') {
+                    console.log('Успешно получены данные:', data.folders);
+                    displayFolders(data.folders, data.current_path);
+                } else {
+                    alert('Ошибка загрузки дисков: ' + data.message);
+                    console.error('Ошибка сервера:', data);
+                }
+            } catch (jsonError) {
+                console.error('Ошибка парсинга JSON:', jsonError);
+                console.error('Текст ответа:', text);
+                alert('Сервер вернул некорректные данные. Проверьте консоль браузера.');
             }
         })
         .catch(error => {
-            console.error('Ошибка:', error);
-            alert('Ошибка при загрузке папок');
+            console.error('Ошибка запроса:', error);
+            alert('Ошибка при загрузке дисков. Проверьте консоль браузера для подробностей.');
+        });
+    }
+    
+    function loadFolders(path) {
+        console.log('Загрузка папок для пути:', path);
+        
+        const formData = new FormData();
+        formData.append('path', path);
+        
+        fetch('<?php echo URL::site("order/browse_folders"); ?>', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('HTTP статус:', response.status);
+            return response.text(); // Сначала получаем как текст
+        })
+        .then(text => {
+            console.log('Сырой ответ сервера:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('Распарсенный JSON:', data);
+                if (data.status === 'success') {
+                    displayFolders(data.folders, data.current_path);
+                } else {
+                    alert('Ошибка загрузки папок: ' + data.message);
+                    console.error('Ошибка сервера:', data);
+                }
+            } catch (jsonError) {
+                console.error('Ошибка парсинга JSON:', jsonError);
+                console.error('Текст ответа:', text);
+                alert('Сервер вернул некорректные данные. Проверьте консоль браузера.');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка запроса:', error);
+            alert('Ошибка при загрузке папок. Проверьте консоль браузера для подробностей.');
         });
     }
     
     function displayFolders(folders, current) {
         selectedPath = current;
-        currentPathText.textContent = current;
+        currentPath = current;
+        
+        // Обновляем отображение текущего пути
+        if (currentPathText) {
+            if (current === 'Диски') {
+                currentPathText.textContent = 'Выбор диска';
+            } else {
+                currentPathText.textContent = current;
+            }
+        } else {
+            console.error('Элемент current-path-text не найден в DOM');
+        }
         
         let html = '';
         
-        // Кнопка "Назад"
-        if (current !== '/') {
-            html += '<div class="folder-item" data-path="' + getParentPath(current) + '">' +
-                   '<span class="folder-icon">↑</span> ..' +
-                   '</div>';
+        if (folders && folders.length > 0) {
+            folders.forEach(folder => {
+                let iconClass = 'folder-item';
+                let icon = '📁';
+                let displayName = folder.name;
+                
+                if (folder.type === 'parent') {
+                    icon = '↰';
+                    displayName = '.. (Вверх)';
+                    iconClass += ' parent';
+                } else if (folder.type === 'drives') {
+                    icon = '💾';
+                    displayName = 'Выбрать диск';
+                    iconClass += ' drives';
+                } else if (folder.type === 'drive') {
+                    icon = '💿';
+                    iconClass += ' drive';
+                }
+                
+                html += '<div class="' + iconClass + '" data-path="' + escapeHtml(folder.path) + '" data-type="' + folder.type + '">' +
+                       '<span class="folder-icon">' + icon + '</span>' +
+                       '<span>' + escapeHtml(displayName) + '</span>' +
+                       '</div>';
+            });
+        } else {
+            html = '<div style="padding: 20px; text-align: center; color: #666;">В этой папке нет подпапок</div>';
         }
-        
-        // Папки
-        folders.forEach(folder => {
-            const fullPath = current.endsWith('/') ? current + folder : current + '/' + folder;
-            html += '<div class="folder-item" data-path="' + fullPath + '">' +
-                   '<span class="folder-icon">📁</span> ' + folder +
-                   '</div>';
-        });
         
         folderList.innerHTML = html;
         
-        // Добавляем обработчики событий
-        document.querySelectorAll('.folder-item').forEach(item => {
+        // Добавляем обработчики событий для элементов папок
+        document.querySelectorAll('.folder-item[data-path]').forEach(item => {
             item.addEventListener('click', function() {
                 const path = this.dataset.path;
-                if (path) {
+                const type = this.dataset.type;
+                
+                if (type === 'drives') {
+                    // Показываем список дисков
+                    loadDrives();
+                } else if (path) {
                     loadFolders(path);
                 }
             });
@@ -412,34 +550,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function createFolder(parentPath, folderName) {
+        const formData = new FormData();
+        formData.append('parent_path', parentPath);
+        formData.append('folder_name', folderName);
+        
         fetch('<?php echo URL::site("order/create_folder"); ?>', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'parent_path=' + encodeURIComponent(parentPath) + '&folder_name=' + encodeURIComponent(folderName)
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
                 newFolderInput.value = '';
-                loadFolders(parentPath); // Обновляем список
+                loadFolders(parentPath);
                 alert('Папка создана успешно');
             } else {
                 alert('Ошибка создания папки: ' + data.message);
             }
         })
         .catch(error => {
-            console.error('Ошибка:', error);
+            console.error('Ошибка запроса:', error);
             alert('Ошибка при создании папки');
         });
     }
     
-    function getParentPath(path) {
-        if (path === '/') return '/';
-        const parts = path.split('/').filter(p => p !== '');
-        parts.pop();
-        return '/' + parts.join('/');
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 });
 </script>

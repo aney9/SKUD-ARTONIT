@@ -1,5 +1,3 @@
-<?php defined('SYSPATH') OR die('No direct access allowed.'); ?>
-
 <div>
     <select name="org_selector" id="org_selector"
             required 
@@ -17,3 +15,15 @@
         <?php endforeach; ?>
     </select>
 </div>
+
+<script>
+$(document).ready(function () {
+    $("#org_selector").select2({
+        placeholder: "Выберите организацию",
+        allowClear: false,
+        language: "ru",
+        width: '300px',
+        theme: 'default'
+    });
+});
+</script>
