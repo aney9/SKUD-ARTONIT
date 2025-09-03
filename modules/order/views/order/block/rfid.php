@@ -24,6 +24,18 @@ if (count($cardlist) > 0) {
         echo $card->id_card . ' (' . $card->id_card_on_DEC . ')<br>';
     }
     echo 'Выдана: ' . date('d.m.Y H:i', strtotime($card->createdat));
+    echo '<br>';
+    $accessname = array_column($access, 'NAME');
+$count = count($accessname);
+$style = $count > 3 ? 'max-height: 60px; overflow-y: auto;' : '';
+
+echo 'Доступ:';
+echo '<div style="' . $style . '">';
+foreach ($accessname as $item) {
+    echo '<li>' . $item . '</li>';
+}
+echo '</div>';
+echo '</ul>';
     ?>
 </fieldset>
 <?php } else { ?>
@@ -102,6 +114,7 @@ if (count($cardlist) > 0) {
                     />
                     <br />
                     
+                    
                     <?php echo Form::hidden('rfidmode', 0); ?>
                     
                     <?php if ($should_block_card_field) { ?>
@@ -109,6 +122,7 @@ if (count($cardlist) > 0) {
                         Поле заблокировано до получения согласия на обработку персональных данных
                     </div>
                     <?php } ?>
+                   
                     
                     <span class="error" id="error11" style="color: red; display: none;"><?php echo __('card.emptyid'); ?></span>
                     <span class="error" id="error12" style="color: red; display: none;"><?php echo __('card.wrongcharacter'); ?></span>

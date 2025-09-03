@@ -17,8 +17,8 @@ $id_card = isset($cardlist[0]['ID_CARD']) ? $cardlist[0]['ID_CARD'] : null;
 $key = new Keyk($id_card);
 $mode = isset($mode) ? $mode : 'guest_mode';
 $user = new User();
+//echo Debug::vars('20', $user);exit;
 ?>
-
 <?php if ($user->id_orgctrl == 1) {
     switch ($mode) {
         case 'buro':
@@ -32,17 +32,17 @@ $user = new User();
             <?php
             switch ($mode) {
                 case 'guest_mode':
-                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) : '';
+                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest_>$patronymic) : '';
                     break;
                 case 'archive_mode':
-                    echo $id_pep ? __('guest.titleinArchive') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) : '';
+                    echo $id_pep ? __('guest.titleinArchive') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest->patronymic) : '';
                     break;
                 case 'newguest':
                 case 'neworder':
                     echo '<span>' . __('guest.registration') . '</span>';
                     break;
                 case 'buro':
-                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) : '';
+                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest->patronymic) : '';
                     break;
             }
             ?>
@@ -77,7 +77,7 @@ $user = new User();
                                 include Kohana::find_file('views', 'order/block/selectBuro');
                                 break;
                             case 'guest_mode':  
-                                if ($user->id_role == 1) {
+                                if ($user->id_role == 1||$user->id_role == 2) {
                                     include Kohana::find_file('views', 'order/block/rfid');
                                     echo '<br>';
                                     include Kohana::find_file('views', 'order/block/card_dates');
@@ -117,7 +117,7 @@ $user = new User();
                             case 'neworder':
                             case 'buro':
                                 include Kohana::find_file('views', 'order/block/note');
-                                if (($mode == 'buro' || $mode == 'neworder') && $user->id_role == 2 ) {
+                                if (($mode == 'buro' || $mode == 'neworder') && $user->id_role == 2 || $user->id_role == 1 ) {
                                     echo '<br>';
                                     include Kohana::find_file('views', 'order/block/access_checkboxes');
                                 }
@@ -134,22 +134,22 @@ $user = new User();
                 case 'neworder':
                     if ($user->id_role == 1 || $user->id_role == 2) {
                         echo Form::hidden('todo', 'savenewwithcard'); 
-                        echo Form::submit('savenewwithcard', __('Добавить гостя'), array(
+                        echo Form::submit('savenewwithcard', __('order.edit.nameAddGuestWithCardBtn'), array(
                             'onclick' => "this.form.elements.todo.value='savenewwithcard'"
                         ));
                         
                         $pd = new PD($id_pep);
                         $signature_file = $pd->checkSignature($id_pep);
                         if ($signature_file === false || !file_exists($signature_file)) {
-                            echo Form::submit('consent', __('Согласие'), array(
-                                'onclick' => "this.form.elements.todo.value='consent'"
+                            echo Form::submit('consent1', __('order.edit.nameConsentBtn'), array(
+                                'onclick' => "this.form.elements.todo.value='consent1'"
                             ));
                         } else {
-                            echo '<a href="/index.php/order/view_signature/' . htmlspecialchars($id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
+                            echo '<a href="/index.php/order/view_signature/' . htmlspecialchars($id_pep) . '" class="btn">' . __('order.edit.nameViewSignature') . '</a>';
                         }
                         
                         if (!empty($cardlist[0]['ID_CARD'])) {
-                            echo Form::submit('forceexit', __('Забрать карту!'), array(
+                            echo Form::submit('forceexit', __('order.edit.nameForceexitBtn'), array(
                                 'onclick' => "this.form.elements.todo.value='forceexit'"
                             ));
                         }
@@ -163,7 +163,7 @@ $user = new User();
                     echo Form::submit('savenew', __('Добавить гостя214'));
                     break;
                 case 'guest_mode':
-                    if ($user->id_role == 1) {
+                    if ($user->id_role == 1 || $user->id_role == 2) {
                         $mode = 'buro';
                         echo Form::hidden('todo', 'reissue'); 
                         echo Form::submit('reissue', __('Обновить233'), array(
@@ -173,15 +173,15 @@ $user = new User();
                         $pd = new PD($id_pep);
                         $signature_file = $pd->checkSignature($id_pep);
                         if ($signature_file === false || !file_exists($signature_file)) {
-                            echo Form::submit('consent', __('Согласие'), array(
+                            echo Form::submit('consent', __('order.edit.nameConsentBtn'), array(
                                 'onclick' => "this.form.elements.todo.value='consent'"
                             ));
                         } else {
-                            echo '<a href="' . URL::site('order/view_signature_page/' . $id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
+                            echo '<a href="' . URL::site('order/view_signature_page/' . $id_pep) . '" class="btn">' . __('order.edit.nameViewSignature') . '</a>';
                         }
                         
                         if (!empty($cardlist[0]['ID_CARD'])) {
-                            echo Form::submit('forceexit', __('Забрать карту!'), array(
+                            echo Form::submit('forceexit', __('order.edit.nameForceexitBtn'), array(
                                 'onclick' => "this.form.elements.todo.value='forceexit'"
                             ));
                         }
@@ -190,7 +190,7 @@ $user = new User();
                     if ($user->id_role === 3){
                         echo Form::open('order/historyGuest/' . $id_pep, array('class' => 'history-form'));
                         echo Form::hidden('todo', 'viewhistory');
-                        echo Form::submit('viewhistory', __('История'), array(
+                        echo Form::submit('viewhistory', __('order.edit.nameHistoryBtn'), array(
                             'class' => 'btn',
                             'onclick' => "this.form.elements.todo.value='viewhistory';"
                         ));
@@ -201,7 +201,7 @@ $user = new User();
                     if ($user->id_role == 1 || $user->id_role == 2) {
                         if (!empty($cardlist[0]['ID_CARD'])) {
                             echo Form::hidden('todo', 'forceexit');
-                            echo Form::submit('forceexit', __('Забрать карту!133'));
+                            echo Form::submit('forceexit', __('Зorder.edit.nameForceexitBtn'));
                         }
                         echo Form::hidden('todo', 'newguestorder');
                         echo Form::submit('newguestorder', __('Повторить заявку222'), array(
@@ -217,7 +217,7 @@ $user = new User();
                     echo '<br>';
                     echo Form::open('order/historyGuest/' . $id_pep, array('class' => 'history-form'));
                     echo Form::hidden('todo', 'viewhistory');
-                    echo Form::submit('viewhistory', __('История'), array(
+                    echo Form::submit('viewhistory', __('order.edit.nameHistoryBtn'), array(
                         'class' => 'btn',
                         'onclick' => "this.form.elements.todo.value='viewhistory';"
                     ));
@@ -232,7 +232,7 @@ $user = new User();
                         if (!empty($cardlist[0]['ID_CARD'])) {
                             echo Form::open();
                             echo Form::hidden('todo', 'forceexit');
-                            echo Form::submit('forceexit', __('Забрать карту!'), array(
+                            echo Form::submit('forceexit', __('order.edit.nameForceexitBtn'), array(
                                 'onclick' => "this.form.elements.todo.value='forceexit'"
                             ));
                         }
@@ -243,14 +243,14 @@ $user = new User();
                         if ($signature_file === false || !file_exists($signature_file)) {
                             echo Form::open('order/PersonalData/' . $id_pep, array('class'=>'consent'));
                             echo Form::hidden('todo', 'consent');
-                            echo Form::submit('consent', __('Согласие'), array(
+                            echo Form::submit('consent', __('order.edit.nameConsentBtn'), array(
                                 'onclick' => "this.form.elements.todo.value='consent'"
                             ));
                             echo Form::close();
                         } else {
                             echo Form::open('order/view_signature_page/'. $id_pep, array('class'=>'signature'));
                             echo Form::hidden('todo', 'signature');
-                            echo Form::submit('signature', __('Посмотреть согласие'), array(
+                            echo Form::submit('signature', __('order.edit.nameViewSignature'), array(
                                 'onclick'=> "this.form.elements.todo.value='signature'"
                             ));
                            //echo '<a href="' . URL::site('order/view_signature_page/' . $id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
@@ -264,7 +264,7 @@ $user = new User();
                     echo Form::close();
                     echo Form::open('order/historyGuest/' . $id_pep, array('class' => 'history-form'));
                     echo Form::hidden('todo', 'viewhistory');
-                    echo Form::submit('viewhistory', __('История'), array(
+                    echo Form::submit('viewhistory', __('order.edit.nameHistoryBtn'), array(
                         'class' => 'btn',
                         'onclick' => "this.form.elements.todo.value='viewhistory';"
                     ));

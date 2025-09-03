@@ -551,10 +551,134 @@ public function action_index($filter = null)
 					$this->redirect('order');
 				break;
 
-			case 'consent':
+            case 'consent':
     			$this->redirect('order/PersonalData/'.$id);
     			break;
 
+			case 'consent1':
+    // Проверяем, что организация выбрана
+    $id_org = Arr::get($_POST, 'org_selector', null);
+    if (empty($id_org)) {
+        $alert = __('Не выбрана организация');
+        Session::instance()->set('e_mess', array('result'=>$alert));
+        $this->redirect('order/edit/0/neworder');
+        break;
+    }
+
+    $guest = new Guest2();
+    $id = $guest->getLastIdPep();
+    $id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
+        ? (int)$id[0]['LAST_ID_PEP'] 
+        : 0;
+    $id_pep = $id_pe + 1;
+    
+    // Заполняем данные гостя
+    $guest->name = Arr::get($_POST, 'name', '');
+    $guest->patronymic = Arr::get($_POST, 'patronymic', '');
+    $guest->surname = Arr::get($_POST, 'surname', '');
+    
+    $docnum1 = Arr::get($_POST, 'docnum1', '');
+    $docnum2 = Arr::get($_POST, 'docnum2', '');
+    $doc_type = Arr::get($_POST, 'doc_type', '');
+    $guest->numdoc = $docnum1 . '#' . $docnum2 . '@' . $doc_type;
+    $guest->docdate = Arr::get($_POST, 'datedoc', '');
+    $guest->note = Arr::get($_POST, 'note', '');
+    
+    $user = new User();
+    $id_pep_user = $user->id_pep;
+    $id_buro = $user->id_buro;
+    
+    // Добавляем гостя в бюро
+    $buro = new Buro();
+    $buro->addGuestToBuro($id_pep, $id_buro);
+    
+    // Даты действия карты
+    $cardDateStart = isset($_POST['carddatestart']) ? trim($_POST['carddatestart']) : date('d.m.Y');
+    $cardDateEnd = isset($_POST['carddateend']) ? trim($_POST['carddateend']) : date('d.m.Y', strtotime('+1 day'));
+    $timeplan = DateTime::createFromFormat('d.m.Y', $cardDateStart);
+    $timevalid = DateTime::createFromFormat('d.m.Y', $cardDateEnd);
+    
+    if($guest->addGuest() >= 0) {
+        $alert = __('guest.addOK', array(
+            ':surname' => $guest->surname,
+            ':name' => $guest->name,
+            ':patronymic' => $guest->patronymic,
+            ':id_pep' => $guest->id
+        ));
+        
+        $order = new Order();
+        $order->id_pep = $id_pep_user;
+        $order->id_guest = $id_pep;
+        $order->id_org = $id_org; // Используем выбранную организацию
+        $order->timeorder = '\'now\'';
+        $order->timeplan = "'" . $timeplan->format('Y-m-d H:i:s') . "'";
+        $order->timevalid = "'" . $timevalid->format('Y-m-d H:i:s') . "'";
+        $order->remark = Arr::get($_POST, 'note','');
+        
+        if($order->add() === 0) {
+            $arrAlert[] = array(
+                'actionResult' => $guest->actionResult, 
+                'actionDesc' => $guest->actionDesc
+            );
+            
+            $alert = __('Заявка успешно создана', array());
+            Session::instance()->set('ok_mess', array('result'=>$alert));
+            
+            // Обработка карты (если нужно)
+            $idcard = Arr::get($_POST, 'idcard', null);
+            $rfidmode = Arr::get($_POST, 'rfidmode', null);
+            
+            if (!empty($idcard)) {
+                $key = new Keyk($idcard);
+                $check = $key->check(1);
+                
+                if(is_null($check)) {
+                    $key->id_card = $idcard;
+                    $key->timestart = Arr::get($_POST, 'carddatestart');
+                    $key->timeend = Arr::get($_POST, 'carddateend');
+                    $key->id_pep = $guest->id_pep;
+                    $key->flag = 1;
+                    $key->rfidmode = $rfidmode;
+                    $id_pep1 = $id_pep;
+                    $id_accessname = Arr::get($_POST, 'ACCESS_NAME');
+                    
+                    if ($id_accessname) {
+                        $guest->setAclDefault($id_pep1, $id_accessname);
+                    }
+                    
+                    if($key->addRfid() == 0) {
+                        $arrAlert[] = array(
+                            'actionResult' => $guest->actionResult, 
+                            'actionDesc' => $guest->actionDesc
+                        );
+                        $alert = __('Карта успешно выдана', array());
+                        Session::instance()->set('ok_mess', array('result'=>$alert));
+                        $this->session->set('mode', 'guest_mode');
+                    } else {
+                        $alert = __('Ошибка выдачи карты', array());
+                        Session::instance()->set('e_mess', array('result'=>$alert));
+                    }
+                } else {
+                    $alert = __('guest.key_occuped', array(
+                        ':idcard' => $idcard,
+                        ':id_pep' => $check,
+                        ':name' => $guest->name,
+                        ':surname' => $guest->surname,
+                        ':patronymic' => $guest->patronymic
+                    ));
+                    Session::instance()->set('e_mess', array('result'=>$alert));
+                }
+            }
+        } else {
+            $alert = __('Ошибка создания заявки', array());
+            Session::instance()->set('e_mess', array('result'=>$alert));
+        }
+    }
+    
+    // Перенаправляем на страницу PersonalData
+    $id = $guest->id_pep;
+    $this->redirect('order/PersonalData/'.$id);
+    break;
 
 			
 			case 'reissue':// выдача карты уже известному гостю + обновление данных о госте
@@ -670,97 +794,119 @@ public function action_index($filter = null)
 	
 
 	public function action_edit() {
-    $id_pep = $this->request->param('id');
-    $mode = $this->request->param('mode');
-    $force_org = $this->request->query('id_org');
-    $guest = new Guest2();
-    $org = $guest->getOrg();
-    $pd = new PD($id_pep);
-    $signature_url = $pd->getSignatureUrl($id_pep);
-    $signature_path = $pd->checkSignature($id_pep);
-    $org_tree = Model::Factory('Company')->getOrgList();
-    $fl = $this->session->get('alert');
-    $arrAlert = $this->session->get('arrAlert');
-    
-    // Получаем настройки приложения
-    $app_settings = $this->getSettings();
-    
-    $this->session->delete('alert');
-    $this->session->delete('arrAlert');
-    $doc = new Documents();
-    $topbuttonbar = View::factory('order/topbuttonbar', array(
-        'id_pep' => $id_pep,
-        '_is_active' => 'edit',
-    ));
-    $guest = new Guest2();
-    $person = $guest->getPersonDetails($id_pep);
-    
-    $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
-    $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
-    $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
-    
-    // Проверяем кодировку
-    if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
-        $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
-        $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
-        $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
-    }
-    
-    $full_name = trim("$surname $name $patronymic");
-    $full_name = preg_replace('/\s+/', ' ', $full_name);
-    $key = new Keyk();
-    $cardlist = $key->getListByPeople($id_pep, 1);
-    $user = new User();
-    if ($user->id_role == 1 || $user->id_role == 2) {
-        if ($mode == 'guest_mode') {
-            $mode = 'buro';
-        }
-    }
-    
-    $buro = new Buro();
-    $buro_accesses = array();
-    $selected_access = '';
-    if ($user->id_role == 2 && !is_null($user->id_buro)) {
-        $access_ids = Arr::pluck($buro->getBuroAccesses($user->id_buro), 'id_accessname');
-        foreach ($access_ids as $access_id) {
-            $access_data = $buro->getAccessById($access_id);
-            if (!empty($access_data)) {
-                $buro_accesses[] = $access_data;
+        
+            $id_pep = $this->request->param('id');
+            $mode = $this->request->param('mode');
+            $user = new User();
+            //echo Debug::vars('677', $user->id_role);exit;
+            if ($user->id_role == 2 || $user->id_role == 1) {
+                if ($mode == 'guest_mode') {
+                    $mode = 'buro';
+                }
             }
+            $force_org = $this->request->query('id_org');
+            $guest = new Guest2();
+            $org = $guest->getOrg();
+            $pd = new PD($id_pep);
+            $signature_url = $pd->getSignatureUrl($id_pep);
+            $signature_path = $pd->checkSignature($id_pep);
+            $org_tree = Model::Factory('Company')->getOrgList();
+            $fl = $this->session->get('alert');
+            $arrAlert = $this->session->get('arrAlert');
+            
+            // Получаем настройки приложения
+            $app_settings = $this->getSettings();
+            
+            $this->session->delete('alert');
+            $this->session->delete('arrAlert');
+            $doc = new Documents();
+            $topbuttonbar = View::factory('order/topbuttonbar', array(
+                'id_pep' => $id_pep,
+                '_is_active' => 'edit',
+            ));
+            $guest = new Guest2();
+            $person = $guest->getPersonDetails($id_pep);
+            
+            $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+            $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+            $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+            
+            // Проверяем кодировку
+            if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
+                $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+                $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+                $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+            }
+            
+            $full_name = trim("$surname $name $patronymic");
+            $full_name = preg_replace('/\s+/', ' ', $full_name);
+            $key = new Keyk();
+            $cardlist = $key->getListByPeople($id_pep, 1);
+            
+            
+            $buro = new Buro();
+        $buro_accesses = array();
+        $selected_access = array();
+        if ($user->id_role == 2 || $user->id_role == 1) {
+            $user_buros = $buro->getUserBuros($user->id_pep);
+            //echo Debug::vars('725', $buro->getUserBuros($user->id_pep));exit;
+            $unique_accesses = array(); // Для хранения уникальных доступов по ID
+
+            foreach ($user_buros as $buro_data) {
+                $id_buro = $buro_data['id_buro'];
+                $access_ids = Arr::pluck($buro->getBuroAccesses($id_buro), 'id_accessname');
+                //echo Debug::vars('731', $access_ids);exit;
+                foreach ($access_ids as $access_id) {
+                    if (!isset($unique_accesses[$access_id])) {
+                        $access_data = $buro->getAccessById($access_id);
+                        //echo Debug::vars('735', $access_data);exit;
+                        if (!empty($access_data)) {
+                            $unique_accesses[$access_id] = $access_data;
+                        }
+                    }
+                }
+            }
+
+            $buro_accesses = array_values($unique_accesses); // Преобразуем в массив без ключей
+            $selected_access = $buro->getAccessUserByIdPep($id_pep); // Теперь массив ID
         }
-        $selected_access = $buro->getAccessUserByIdPep($id_pep);
-    }
-    $user = new User();
-    $id_pepp = $user->id_pep;
-    $buro_list = $buro->getIdBuroForUser($id_pepp);
-    
-    $this->template->content = View::factory('order/edit')
-        ->bind('id_pep', $id_pep)
-        ->bind('contact', $contact)
-        ->bind('alert', $fl)
-        ->bind('signature_url', $signature_url)
-        ->bind('signature_path', $signature_path)
-        ->bind('arrAlert', $arrAlert)
-        ->bind('contact_acl', $contact_acl)
-        ->bind('org_tree', $org_tree)
-        ->bind('full_name', $full_name)
-        ->bind('force_org', $force_org)
-        ->bind('check_acl', $check_acl)
-        ->bind('companies', $companies)
-        ->bind('cardlist', $cardlist)
-        ->bind('mode', $mode)
-        ->bind('topbuttonbar', $topbuttonbar)
-        ->bind('surname', $surname)
-        ->bind('timeend', $timeend)
-        ->bind('timestart', $timestart)
-        ->bind('guest', $guest)
-        ->bind('buro_accesses', $buro_accesses)
-        ->bind('selected_access', $selected_access)
-        ->bind('buro_list', $buro_list)
-        ->bind('org', $org)
-        ->bind('user', $user)
-        ->bind('app_settings', $app_settings);  // передаем настройки в представление
-}
+            $user = new User();
+            $id_pepp = $user->id_pep;
+            $buro_list = $buro->getIdBuroForUser($id_pepp);
+            //echo Debug::vars('876', $id_pep);exit;
+            $access = $guest->getAccessUser($id_pep);
+            
+            
+            //echo Debug::vars('877', $access);//exit;
+            
+            $this->template->content = View::factory('order/edit')
+                ->bind('id_pep', $id_pep)
+                ->bind('contact', $contact)
+                ->bind('alert', $fl)
+                ->bind('signature_url', $signature_url)
+                ->bind('signature_path', $signature_path)
+                ->bind('arrAlert', $arrAlert)
+                ->bind('contact_acl', $contact_acl)
+                ->bind('org_tree', $org_tree)
+                ->bind('full_name', $full_name)
+                ->bind('force_org', $force_org)
+                ->bind('check_acl', $check_acl)
+                ->bind('companies', $companies)
+                ->bind('cardlist', $cardlist)
+                ->bind('mode', $mode)
+                ->bind('topbuttonbar', $topbuttonbar)
+                ->bind('surname', $surname)
+                ->bind('timeend', $timeend)
+                ->bind('timestart', $timestart)
+                ->bind('guest', $guest)
+                ->bind('buro_accesses', $buro_accesses)
+                ->bind('selected_access', $selected_access)
+                ->bind('buro_list', $buro_list)
+                ->bind('org', $org)
+                ->bind('user', $user)
+                ->bind('app_settings', $app_settings)
+                ->bind('access', $access);  // передаем настройки в представление
+        }
 	public function _action__view()
 	{
 		$id=$this->request->param('id');
@@ -1964,13 +2110,15 @@ public function action_deleteFromBuro() {
 public function action_historyGuest()
     {
 		$id_pep = $this->request->param('id');
-        $guest = new Guest2();
+        $guest = new Guest2($id_pep);
+        //echo Debug::vars('2108', $guest);exit;
         $events = $guest->getEvents($id_pep);
 		//echo Debug::vars('1700', $events);
 
         $this->template->content = View::factory('order/historyGuest')
             ->bind('id_pep', $id_pep)
             ->bind('events', $events)
+            ->bind('guest', $guest)
 			->bind('pagination', $pagination);
     }
 

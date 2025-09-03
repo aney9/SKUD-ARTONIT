@@ -6,32 +6,37 @@
         <div style="margin-bottom: 10px;">
             <?php 
             if (isset($buro_accesses) && is_array($buro_accesses) && !empty($buro_accesses)) {
-                $selected_value = isset($selected_access) ? $selected_access : '';
-                
                 foreach ($buro_accesses as $access) {
+                    // Приводим ID к строке для надежности
+                    $access_id = (string)$access['ID_ACCESSNAME'];
+                    // Проверяем, есть ли ID в $selected_access (приводим к строкам)
+                    $is_checked = isset($selected_access) && is_array($selected_access) && in_array($access_id, array_map('strval', $selected_access));
+                    
                     if ($user->count_access == 1) {
-                        echo '<input type="hidden" name="ACCESS_NAME" value="' . htmlspecialchars($access['ID_ACCESSNAME']) . '">';
+                        // Для одного доступа используем скрытое поле и отключенную радиокнопку
+                        echo '<input type="hidden" name="ACCESS_NAME" value="' . htmlspecialchars($access_id, ENT_QUOTES, 'UTF-8') . '">';
                         echo Form::radio(
                             'ACCESS_NAME_display',
-                            $access['ID_ACCESSNAME'],
+                            $access_id,
                             true,
                             array(
-                                'id' => 'access_' . htmlspecialchars($access['ID_ACCESSNAME']),
+                                'id' => 'access_' . htmlspecialchars($access_id, ENT_QUOTES, 'UTF-8'),
                                 'disabled' => 'disabled'
                             )
                         );
                     } else {
+                        // Для множественных доступов используем радиокнопку
                         echo Form::radio(
                             'ACCESS_NAME',
-                            $access['ID_ACCESSNAME'],
-                            ($access['ID_ACCESSNAME'] == $selected_value),
+                            $access_id,
+                            $is_checked,
                             array(
-                                'id' => 'access_' . htmlspecialchars($access['ID_ACCESSNAME']),
-                                'required' => 'required' // Добавлен атрибут required
+                                'id' => 'access_' . htmlspecialchars($access_id, ENT_QUOTES, 'UTF-8'),
+                                'required' => 'required' // Сохраняем атрибут required
                             )
                         );
                     }
-                    echo Form::label('access_' . htmlspecialchars($access['ID_ACCESSNAME']), htmlspecialchars($access['NAME']));
+                    echo Form::label('access_' . htmlspecialchars($access_id, ENT_QUOTES, 'UTF-8'), htmlspecialchars($access['NAME'], ENT_QUOTES, 'UTF-8'));
                     echo '<br>';
                 }
             } else {

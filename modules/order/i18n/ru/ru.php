@@ -19,5 +19,21 @@ return array
 	'guest.update'=>'Сохранить изменения',
 	'guest.updateOK'=>'Изменения для гостя :surname :name :patronymic сохранены успешно.',
 	'guest.updateErr'=>'Ошибка! Изменения для гостя :surname :name :patronymic НЕ сохранены.',
-	
+	'order.settings.name'=>'Настройки бюро пропусков',
+	'order.settings.nameListBuro'=>'Список бюро',
+	'order.settings.nameSettingPD'=>'Настройки согласия',
+	'order.settings.namePolicy'=>'Политика выдачи карт',
+	'order.settings.nameWay'=>'Путь к папке для сохранения файлов: ',
+	'order.settings.nameText'=>'Текст согласия: ',
+	'order.settings.namePeopleAndAccess' => 'Сотрудники и их доступы',
+	'order.settings.nameAlertSuccess'=>'Настройки успешно сохранены!',
+	'order.settings.nameAlertError'=>'Ошибка при сохранении настроек: ',
+	'order.settings.nameAddBuroBtn'=>'Добавить бюро',
+	'order.settings.nameBrowseFolderBtn'=>'Выбрать папку',
+	'order.settings.nameSaveSettingsBtn'=>'Сохранить настройки',
+	'order.edit.nameConsentBtn'=>'Согласие',
+	'order.edit.nameAddGuestWithCardBtn'=>'Добавить гостя',
+	'order.edit.nameForceexitBtn'=>'Забрать карту',
+	'order.edit.nameViewSignature'=>'Посмотреть согласие',
+	'order.edit.nameHistoryBtn'=>'История'
 );

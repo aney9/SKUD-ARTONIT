@@ -8,7 +8,8 @@
 
 <div class="onecolumn">
     <div class="header">
-        <span><?php echo __('История событий для гостя ID: ') . HTML::chars($id_pep); ?></span>
+        <span><?php echo __('История событий для гостя: ') . HTML::chars($guest->surname) . ' ' . HTML::chars($guest->name)
+        . ' ' . HTML::chars($guest->patronymic); ?></span>
     </div>
     <br class="clear"/>
     <div class="content">

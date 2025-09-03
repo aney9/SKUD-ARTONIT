@@ -1,8 +1,8 @@
 <div class="container">
-    <h2>Настройки бюро пропусков</h2>
-    
-    <!-- Таблица списка бюро -->
-    <h3>Список бюро</h3>
+
+    <h2><?php echo __('order.settings.name')?></h2>
+    <fieldset>
+        <legend><?php echo __('order.settings.nameListBuro')?></legend>
     <table class="data" width="100%" cellpadding="0" cellspacing="0">
         <thead>
             <tr>
@@ -27,28 +27,29 @@
     <?php
 echo Form::open('order/addBuro', array('class' => 'add-buro-form'));
 echo Form::hidden('todo', 'addburo');
-echo Form::submit('addburo', __('Добавить бюро'), array(
+echo Form::submit('addburo', __('order.settings.nameAddBuroBtn'), array(
     'class' => 'btn-add'
 ));
 echo Form::close();
 ?>
+</fieldset>
 
-    
+    <fieldset>
+        <legend><?php echo __('order.settings.nameSettingPD')?></legend>
     <?php if (isset($_GET['settings_saved']) && $_GET['settings_saved'] == '1') { ?>
     <div class="message success">
-        Настройки успешно сохранены!
+        <?php echo __('order.settings.nameAlertSuccess')?>
     </div>
     <?php } elseif (isset($_GET['settings_error'])) { ?>
     <div class="message error">
-        Ошибка при сохранении настроек: <?php echo HTML::chars($_GET['settings_error']); ?>
+        <?php echo __('order.settings.nameAlertError')?> <?php echo HTML::chars($_GET['settings_error']); ?>
     </div>
     <?php } ?>
     
     <form action="<?php echo URL::site('order/save_settings'); ?>" method="post" id="settings-form">
         
-        <!-- Добавляем настройки согласия -->
         <div class="setting-group">
-            <h4>Политика выдачи карт</h4>
+            <h4><?php echo __('order.settings.namePolicy')?></h4>
             <div class="radio-group">
                 <label>
                     <input type="radio" name="require_consent_for_card" value="0" 
@@ -64,19 +65,18 @@ echo Form::close();
             </div>
         </div>
         
-        <label for="upload_dir">Путь к папке для сохранения файлов:</label><br>
+        <label for="upload_dir"><?php echo __('order.settings.nameWay')?></label><br>
         <div style="display: flex; align-items: center; margin-bottom: 10px;">
             <input type="text" id="upload_dir" name="upload_dir" value="<?php echo HTML::chars($upload_dir); ?>" style="width: 70%; margin-right: 10px;" readonly>
-            <button type="button" id="browse-folder" class="btn-add">Выбрать папку</button>
+            <input type="button" id="browse-folder" class="btn-add" value="<?php echo __('order.settings.nameBrowseFolderBtn')?>">
         </div>
         
-        <label for="consent_text">Текст согласия:</label><br>
+        <label for="consent_text"><?php echo __('order.settings.nameText')?></label><br>
         <textarea id="consent_text" name="consent_text" style="width: 100%; height: 150px;"><?php echo HTML::chars($consent_text); ?></textarea><br>
         
-        <input type="submit" value="Сохранить настройки" class="btn-add">
+        <input type="submit" value="<?php echo __('order.settings.nameSaveSettingsBtn')?>" class="btn-add">
     </form>
 
-    <!-- Модальное окно для выбора папки -->
     <div id="folder-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -88,7 +88,6 @@ echo Form::close();
                     Текущая папка: <span id="current-path-text"><?php echo HTML::chars(dirname($_SERVER['SCRIPT_FILENAME'])); ?></span>
                 </div>
                 <div id="folder-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
-                    <!-- Список папок будет загружен через AJAX -->
                 </div>
                 <div style="margin-top: 15px;">
                     <input type="text" id="new-folder-name" placeholder="Имя новой папки" style="width: 70%; margin-right: 10px;">
@@ -101,9 +100,10 @@ echo Form::close();
             </div>
         </div>
     </div>
+</fieldset>
 
-    <!-- Таблица сотрудников и их бюро -->
-    <h3 style="margin-top: 30px;">Сотрудники и их доступы</h3>
+<fieldset>
+    <legend><?php echo __('order.settings.namePeopleAndAccess')?></legend>
     <table class="data" width="100%" cellpadding="0" cellspacing="0">
         <thead>
             <tr>
@@ -175,6 +175,7 @@ echo Form::close();
         </tbody>
     </table>
 </div>
+</fieldset>
 
 <style>
     .container {
@@ -266,13 +267,13 @@ echo Form::close();
     }
     
     /* Стили для новых элементов */
-    .setting-group {
+    /* .setting-group {
         margin: 20px 0;
         padding: 15px;
         border: 1px solid #ddd;
         border-radius: 4px;
         background-color: #f9f9f9;
-    }
+    } */
     
     .radio-group label {
         display: block;

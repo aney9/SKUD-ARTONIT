@@ -945,4 +945,29 @@ public function getOrg(){
             'ORG_NAME' => !empty($row['ORG_NAME']) ? iconv('CP1251', 'UTF-8', $row['ORG_NAME']) : ''
         ];
     }
+
+	public function getAccessUser($id_pep){
+    $sql = "SELECT
+                an.name
+            FROM ss_accessuser ss
+            JOIN accessname an on ss.id_accessname = an.id_accessname
+            where ss.id_pep= :id_pep";
+    $query = DB::query(Database::SELECT, $sql)
+    ->param(':id_pep', $id_pep)
+    ->execute(Database::instance('fb'));
+    $result = $query->as_array();
+    
+    if (empty($result)) {
+        return null;
+    }
+    
+    $accessList = [];
+    foreach ($result as $row) {
+        $accessList[] = [
+            'NAME' => iconv('CP1251', 'UTF-8', $row['NAME'])
+        ];
+    }
+    
+    return $accessList;
+}
 }
