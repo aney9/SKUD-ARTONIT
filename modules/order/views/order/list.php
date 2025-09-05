@@ -88,6 +88,7 @@ if ($alert) { ?>
                         <thead>
                             <tr>
                                 <th><?php echo __('ФИО гостя'); ?></th>
+                                <th><?php echo __('order.time_stamp'); ?></th>
                                 <th><?php echo __('Номер документа')?></th>
                                 <th><?php echo __('Персональные данные')?></th>
                             </tr>
@@ -95,7 +96,10 @@ if ($alert) { ?>
                         <tbody>
                             <?php 
                             $pd = new PD(0); // Создаем экземпляр класса PD
+                            
                             foreach ($people as $pep) { 
+                            
+							//echo Debug::vars('99', $pep, Arr::get($pep, 'TIME_STAMP')); exit;
                                 $surname = isset($pep['GUEST_SURNAME']) ? $pep['GUEST_SURNAME'] : '';
                                 $name = isset($pep['GUEST_NAME']) ? $pep['GUEST_NAME'] : '';
                                 $patronymic = isset($pep['GUEST_PATRONYMIC']) ? $pep['GUEST_PATRONYMIC'] : '';
@@ -146,6 +150,9 @@ if ($alert) { ?>
                                     ); ?>
                                 </td>
                                 <td>
+                                    <?php echo Arr::get($pep, 'TIME_STAMP'); ?>
+                                </td>
+                                <td>
                                     <?php echo HTML::chars($doc_display); ?>
                                 </td>
                                 <td>
@@ -185,6 +192,7 @@ if ($alert) { ?>
                         <tbody>
                             <?php 
                             $today = strtotime(date('Y-m-d'));
+                            //echo Debug::vars('100', $people);exit;
                             foreach ($people as $pep) { 
                                 $createdat = isset($pep['CREATEDAT']) ? strtotime(date('Y-m-d', strtotime($pep['CREATEDAT']))) : 0;
                                 

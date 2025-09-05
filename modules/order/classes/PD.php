@@ -20,41 +20,47 @@ class PD {
         }
 
         $settings = $this->getSettings();
-        $upload_dir = $settings['upload_dir'] . DIRECTORY_SEPARATOR;
+        $upload_dir = $this->normalizePath($settings['upload_dir']);
+        
         if (!is_dir($upload_dir) || !is_readable($upload_dir)) {
             Kohana::$log->add(Log::ERROR, 'PD::checkSignature: Upload directory is not accessible: ' . $upload_dir);
             return false;
         }
+        if (!is_writable($upload_dir)) {
+            Kohana::$log->add(Log::ERROR, 'PD::checkSignature: Upload directory is not writable: ' . $upload_dir);
+        }
 
         $file_safe_name = $this->createFileSafeName($person);
         $filename_utf8 = $id_pep . '_' . $file_safe_name . '.jpg';
-        $filename_cp1251 = iconv('UTF-8', 'CP1251//IGNORE', $filename_utf8);
-        $filepath_cp1251 = $upload_dir . $filename_cp1251;
+        
+        // Используем правильную кодировку в зависимости от системы
+        $filename_system = $this->convertToSystemEncoding($filename_utf8);
+        $filepath_system = $upload_dir . DIRECTORY_SEPARATOR . $filename_system;
 
-        Kohana::$log->add(Log::DEBUG, 'PD::checkSignature: Checking main file ' . $filepath_cp1251);
+        Kohana::$log->add(Log::DEBUG, 'PD::checkSignature: Checking main file ' . $filepath_system);
 
-        if (file_exists($filepath_cp1251) && is_readable($filepath_cp1251)) {
-            Kohana::$log->add(Log::DEBUG, 'PD::checkSignature: Signature found at ' . $filepath_cp1251);
-            return $filepath_cp1251;
+        if (file_exists($filepath_system) && is_readable($filepath_system)) {
+            Kohana::$log->add(Log::DEBUG, 'PD::checkSignature: Signature found at ' . $filepath_system);
+            return $filepath_system;
         }
 
         // Проверяем файлы с числовым суффиксом
         $counter = 1;
-        $base_filename_cp1251 = pathinfo($filename_cp1251, PATHINFO_FILENAME);
-        $extension = pathinfo($filename_cp1251, PATHINFO_EXTENSION);
+        $base_filename_system = pathinfo($filename_system, PATHINFO_FILENAME);
+        $extension = pathinfo($filename_system, PATHINFO_EXTENSION);
 
         while ($counter <= 100) {
-            $numbered_filename_cp1251 = $base_filename_cp1251 . '_' . $counter . '.' . $extension;
-            $numbered_filepath_cp1251 = $upload_dir . $numbered_filename_cp1251;
+            $numbered_filename_system = $base_filename_system . '_' . $counter . '.' . $extension;
+            $numbered_filepath_system = $upload_dir . DIRECTORY_SEPARATOR . $numbered_filename_system;
 
-            if (file_exists($numbered_filepath_cp1251) && is_readable($numbered_filepath_cp1251)) {
-                Kohana::$log->add(Log::DEBUG, 'PD::checkSignature: Signature found at ' . $numbered_filepath_cp1251);
-                return $numbered_filepath_cp1251;
+            if (file_exists($numbered_filepath_system) && is_readable($numbered_filepath_system)) {
+                Kohana::$log->add(Log::DEBUG, 'PD::checkSignature: Signature found at ' . $numbered_filepath_system);
+                return $numbered_filepath_system;
             }
             $counter++;
         }
 
-        // Фоллбэк: поиск по паттерну, если ничего не найдено
+        // Фоллбэк: поиск по паттерну
         $found_by_pattern = $this->searchByPattern($upload_dir, $id_pep, $file_safe_name);
         if ($found_by_pattern) {
             return $found_by_pattern;
@@ -64,39 +70,34 @@ class PD {
         return false;
     }
 
-    /**
-     * Поиск файлов по паттерну в директории (фоллбэк метод)
-     */
     private function searchByPattern($upload_dir, $id_pep, $file_safe_name_utf8) {
         Kohana::$log->add(Log::DEBUG, 'PD::searchByPattern: Fallback search in directory');
         
-        $files = scandir($upload_dir);
+        $files = $this->scanDirectorySafe($upload_dir);
         if ($files === false) {
+            Kohana::$log->add(Log::ERROR, 'PD::searchByPattern: Failed to scan directory: ' . $upload_dir);
             return false;
         }
         
-        // Конвертируем safe_name в CP1251 для сравнения
-        $file_safe_name_cp1251 = iconv('UTF-8', 'CP1251//IGNORE', $file_safe_name_utf8);
+        $file_safe_name_system = $this->convertToSystemEncoding($file_safe_name_utf8);
         
         foreach ($files as $file) {
-            if ($file === '.' || $file === '..' || !is_file($upload_dir . $file)) {
+            if ($file === '.' || $file === '..' || !is_file($upload_dir . DIRECTORY_SEPARATOR . $file)) {
                 continue;
             }
             
-            // Проверяем, начинается ли файл с ID пользователя
+            // Проверяем, начинается ли файл с ID
             if (strpos($file, $id_pep . '_') === 0) {
                 Kohana::$log->add(Log::DEBUG, 'PD::searchByPattern: Found potential match: ' . $file);
                 
-                // Разбиваем имя файла на части (в CP1251)
-                $name_parts_cp1251 = explode('_', pathinfo($file, PATHINFO_FILENAME));
+                $name_parts_system = explode('_', pathinfo($file, PATHINFO_FILENAME));
                 $found_parts = 0;
                 
-                // Разбиваем safe_name на части
-                $safe_parts_cp1251 = explode('_', $file_safe_name_cp1251);
+                $safe_parts_system = explode('_', $file_safe_name_system);
                 
-                foreach ($safe_parts_cp1251 as $part) {
+                foreach ($safe_parts_system as $part) {
                     if (strlen($part) >= 3) {
-                        foreach ($name_parts_cp1251 as $file_part) {
+                        foreach ($name_parts_system as $file_part) {
                             if (strpos($file_part, $part) !== false) {
                                 $found_parts++;
                                 break;
@@ -105,9 +106,8 @@ class PD {
                     }
                 }
                 
-                // Если найдено достаточно частей имени, считаем файл подходящим
                 if ($found_parts >= 2) {
-                    $full_path = $upload_dir . $file;
+                    $full_path = $upload_dir . DIRECTORY_SEPARATOR . $file;
                     Kohana::$log->add(Log::DEBUG, 'PD::searchByPattern: Match found by pattern: ' . $full_path);
                     return $full_path;
                 }
@@ -121,13 +121,16 @@ class PD {
         $signaturePath = $this->checkSignature($id_pep);
         if ($signaturePath) {
             $settings = $this->getSettings();
-            $upload_dir = $settings['upload_dir'];
+            $upload_dir = $this->normalizePath($settings['upload_dir']);
             
-            $relativePath = str_replace(DOCROOT, '', $signaturePath);
-            $relativePath = str_replace('\\', '/', $relativePath);  // Для Windows
+            // Получаем относительный путь от DOCROOT
+            $docroot = $this->normalizePath(DOCROOT);
+            $relativePath = str_replace($docroot, '', $signaturePath);
+            $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
+            $relativePath = ltrim($relativePath, '/');
             
-            $filename_cp1251 = basename($signaturePath);
-            $filename_utf8 = iconv('CP1251', 'UTF-8//IGNORE', $filename_cp1251);
+            $filename_system = basename($signaturePath);
+            $filename_utf8 = $this->convertFromSystemEncoding($filename_system);
             
             $relativePath_utf8 = dirname($relativePath) . '/' . $filename_utf8;
             
@@ -135,7 +138,7 @@ class PD {
             $encodedParts = array_map('rawurlencode', $pathParts);
             $encodedPath = implode('/', $encodedParts);
             
-            $url = URL::base() . ltrim($encodedPath, '/');
+            $url = URL::base() . $encodedPath;
             
             Kohana::$log->add(Log::DEBUG, 'PD::getSignatureUrl: Generated URL: ' . $url);
             
@@ -160,26 +163,22 @@ class PD {
     }
 
     public function createSignatureLink($id_pep) {
-        $settings = $this->getSettings();
         return URL::site('order/PersonalData/' . $id_pep);
     }
 
-    /**
-     * Получает полное имя из данных персоны с правильной конвертацией кодировки
-     */
     private function getFullName($person) {
         $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
         $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
         $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
 
         if (!mb_check_encoding($surname, 'UTF-8')) {
-            $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+            $surname = $this->convertFromSystemEncoding($surname);
         }
         if (!mb_check_encoding($name, 'UTF-8')) {
-            $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+            $name = $this->convertFromSystemEncoding($name);
         }
         if (!mb_check_encoding($patronymic, 'UTF-8')) {
-            $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+            $patronymic = $this->convertFromSystemEncoding($patronymic);
         }
 
         $full_name = trim($surname . '_' . $name . '_' . $patronymic);
@@ -190,10 +189,6 @@ class PD {
         return $full_name;
     }
 
-    /**
-     * Создает безопасное имя файла для файловой системы
-     * Принимает массив данных персоны
-     */
     private function createFileSafeName($person) {
         $full_name = $this->getFullName($person);
         
@@ -210,14 +205,9 @@ class PD {
         
         Kohana::$log->add(Log::DEBUG, 'PD::createFileSafeName: Final safe name: ' . $safe_name);
         
-        return $safe_name;
+        return $safe_name;  
     }
 
-    /**
-     * Создает имя файла для сохранения подписи
-     * Принимает массив данных персоны
-     * Возвращает имя в UTF-8
-     */
     public function generateFileName($id_pep, $person) {
         $file_safe_name = $this->createFileSafeName($person);
         return $id_pep . '_' . $file_safe_name . '.jpg';
@@ -244,5 +234,103 @@ class PD {
             'upload_dir' => DOCROOT . 'downloads',
             'consent_text' => 'Я, {full_name}, подтверждаю, что я предоставляю свое согласие на обработку персональных данных в соответствии с Федеральным законом №152-ФЗ "О персональных данных". Согласие распространяется на сбор, систематизацию, накопление, хранение, уточнение, использование, распространение и иные действия с моими персональными данными в рамках целей, связанных с заключением и исполнением договоров, а также предоставлением услуг. Я знаю о праве отозвать согласие в любой момент путем направления письменного уведомления. Данное согласие действует до момента его отзыва или истечения срока, установленного законодательством Российской Федерации.'
         );
+    }
+
+    // Новые вспомогательные методы для правильной работы с путями и кодировками
+
+    /**
+     * Нормализует путь для корректной работы на разных ОС и дисках
+     */
+    private function normalizePath($path) {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows
+            $path = str_replace('/', '\\', $path);
+            $path = rtrim($path, '\\');
+            // Не убираем завершающий слэш для корня диска
+            if (preg_match('/^[A-Za-z]:$/', $path)) {
+                $path .= '\\';
+            }
+        } else {
+            // Unix/Linux
+            $path = str_replace('\\', '/', $path);
+            $path = rtrim($path, '/');
+            if (empty($path)) {
+                $path = '/';
+            }
+        }
+        return $path;
+    }
+
+    /**
+     * Конвертирует строку в кодировку файловой системы
+     */
+    private function convertToSystemEncoding($string) {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows использует CP1251 для кириллицы в файловой системе
+            if (function_exists('iconv')) {
+                return iconv('UTF-8', 'CP1251//IGNORE', $string);
+            } elseif (function_exists('mb_convert_encoding')) {
+                return mb_convert_encoding($string, 'CP1251', 'UTF-8');
+            }
+        }
+        // Unix/Linux обычно использует UTF-8
+        return $string;
+    }
+
+    /**
+     * Конвертирует строку из кодировки файловой системы в UTF-8
+     */
+    private function convertFromSystemEncoding($string) {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows использует CP1251 для кириллицы в файловой системе
+            if (!mb_check_encoding($string, 'UTF-8')) {
+                if (function_exists('iconv')) {
+                    return iconv('CP1251', 'UTF-8//IGNORE', $string);
+                } elseif (function_exists('mb_convert_encoding')) {
+                    return mb_convert_encoding($string, 'UTF-8', 'CP1251');
+                }
+            }
+        }
+        return $string;
+    }
+
+    /**
+     * Безопасное сканирование директории с обработкой кодировок
+     */
+    private function scanDirectorySafe($directory) {
+        $files = @scandir($directory);
+        if ($files === false) {
+            return false;
+        }
+
+        // Для Windows конвертируем имена файлов в UTF-8
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $converted_files = array();
+            foreach ($files as $file) {
+                $converted_files[] = $this->convertFromSystemEncoding($file);
+            }
+            return $converted_files;
+        }
+
+        return $files;
+    }
+
+    /**
+     * Проверяет доступность пути с учетом разных дисков
+     */
+    private function isPathAccessible($path) {
+        $normalized_path = $this->normalizePath($path);
+        
+        // Для Windows проверяем доступность диска
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $drive = substr($normalized_path, 0, 2);
+            if (preg_match('/^[A-Za-z]:$/', $drive)) {
+                if (!is_dir($drive . '\\')) {
+                    return false;
+                }
+            }
+        }
+
+        return is_dir($normalized_path) && is_readable($normalized_path);
     }
 }

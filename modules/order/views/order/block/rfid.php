@@ -25,17 +25,23 @@ if (count($cardlist) > 0) {
     }
     echo 'Выдана: ' . date('d.m.Y H:i', strtotime($card->createdat));
     echo '<br>';
-    $accessname = array_column($access, 'NAME');
-$count = count($accessname);
-$style = $count > 3 ? 'max-height: 60px; overflow-y: auto;' : '';
+		
+	if(isset($access) && is_array($access)){	
+		$accessname = array_column($access, 'NAME');
+		$count = count($accessname);
+		$style = $count > 3 ? 'max-height: 60px; overflow-y: auto;' : '';
 
-echo 'Доступ:';
-echo '<div style="' . $style . '">';
-foreach ($accessname as $item) {
-    echo '<li>' . $item . '</li>';
-}
-echo '</div>';
-echo '</ul>';
+		echo 'Доступ:';
+            echo '<div style="' . $style . '">';
+            foreach ($accessname as $item) {
+                echo '<li style="margin-left: 20px;">' . $item . '</li>';
+            }
+            echo '</div>';
+            echo '</ul>';
+	} else {
+		echo 'Доступ: Нет';
+		
+	}
     ?>
 </fieldset>
 <?php } else { ?>

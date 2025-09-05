@@ -359,11 +359,11 @@ public function action_index($filter = null)
     }
 
     $guest = new Guest2();
-    $id = $guest->getLastIdPep();
-    $id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
-        ? (int)$id[0]['LAST_ID_PEP'] 
-        : 0;
-    $id_pep = $id_pe +1;
+    // $id = $guest->getLastIdPep();
+    // $id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
+    //     ? (int)$id[0]['LAST_ID_PEP'] 
+    //     : 0;
+    // $id_pep = $id_pe +1;
     
     // Заполняем данные гостя
     $guest->name = Arr::get($_POST, 'name', '');
@@ -382,7 +382,7 @@ public function action_index($filter = null)
     $id_pep_user = $user->id_pep;
 	$id_buro = $user->id_buro;
 	$buro = new Buro();
-	$buro->addGuestToBuro($id_pep, $id_buro);
+	//$buro->addGuestToBuro($id_pep, $id_buro);
     
     // Даты действия карты
     $cardDateStart = isset($_POST['carddatestart']) ? trim($_POST['carddatestart']) : date('d.m.Y');
@@ -397,7 +397,9 @@ public function action_index($filter = null)
             ':patronymic'=>$guest->patronymic,
             ':id_pep'=>$guest->id
         ));
-        
+        $id_pep = $guest->id_pep;
+        //echo Debug::vars('613', $id_pep);exit;
+        $buro->addGuestToBuro($id_pep, $id_buro);
         $order = new Order();
         $order->id_pep = $id_pep_user;
         $order->id_guest = $id_pep;
@@ -551,7 +553,7 @@ public function action_index($filter = null)
 					$this->redirect('order');
 				break;
 
-            case 'consent':
+			case 'consent':
     			$this->redirect('order/PersonalData/'.$id);
     			break;
 
@@ -566,11 +568,12 @@ public function action_index($filter = null)
     }
 
     $guest = new Guest2();
-    $id = $guest->getLastIdPep();
-    $id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
-        ? (int)$id[0]['LAST_ID_PEP'] 
-        : 0;
-    $id_pep = $id_pe + 1;
+    // $id = $guest->getLastIdPep();
+    // $id_pe = isset($id[0]['LAST_ID_PEP']) && $id[0]['LAST_ID_PEP'] !== null 
+    //     ? (int)$id[0]['LAST_ID_PEP'] 
+    //     : 0;
+        
+    // $id_pep = $id_pe + 1;
     
     // Заполняем данные гостя
     $guest->name = Arr::get($_POST, 'name', '');
@@ -590,7 +593,9 @@ public function action_index($filter = null)
     
     // Добавляем гостя в бюро
     $buro = new Buro();
-    $buro->addGuestToBuro($id_pep, $id_buro);
+    //$guest2 = new Guest()
+    //echo Debug::vars('594', $guest);exit;
+    //$buro->addGuestToBuro($id_pep, $id_buro); - ЕЕ НАДО ПЕРЕМЕСТИТЬ
     
     // Даты действия карты
     $cardDateStart = isset($_POST['carddatestart']) ? trim($_POST['carddatestart']) : date('d.m.Y');
@@ -605,6 +610,10 @@ public function action_index($filter = null)
             ':patronymic' => $guest->patronymic,
             ':id_pep' => $guest->id
         ));
+        //echo Debug::vars('611', $guest);exit;
+        $id_pep = $guest->id_pep;
+        //echo Debug::vars('613', $id_pep);exit;
+        $buro->addGuestToBuro($id_pep, $id_buro);
         
         $order = new Order();
         $order->id_pep = $id_pep_user;
@@ -679,6 +688,8 @@ public function action_index($filter = null)
     $id = $guest->id_pep;
     $this->redirect('order/PersonalData/'.$id);
     break;
+
+
 
 			
 			case 'reissue':// выдача карты уже известному гостю + обновление данных о госте
@@ -797,6 +808,7 @@ public function action_index($filter = null)
         
             $id_pep = $this->request->param('id');
             $mode = $this->request->param('mode');
+            //echo Debug::vars('811', $mode);exit;
             $user = new User();
             //echo Debug::vars('677', $user->id_role);exit;
             if ($user->id_role == 2 || $user->id_role == 1) {
@@ -829,7 +841,7 @@ public function action_index($filter = null)
             
             $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
             $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
-            $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+            $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : '';
             
             // Проверяем кодировку
             if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
@@ -878,7 +890,7 @@ public function action_index($filter = null)
             
             
             //echo Debug::vars('877', $access);//exit;
-            
+            //echo Debug::vars('893', $mode);exit;
             $this->template->content = View::factory('order/edit')
                 ->bind('id_pep', $id_pep)
                 ->bind('contact', $contact)
@@ -1704,7 +1716,367 @@ public function action_update_buro()
     $this->redirect('order/buro_details/'.$id_buro);
 }
 
-public function action_save_settings() {
+private function normalizePathImproved($path) {
+    if (DIRECTORY_SEPARATOR === '\\') {
+        // Windows
+        $path = str_replace('/', '\\', $path);
+        // Не удаляем завершающий слэш для корня диска
+        if (preg_match('/^[A-Za-z]:\\\\?$/', $path)) {
+            if (!preg_match('/^[A-Za-z]:\\\\$/', $path)) {
+                $path .= '\\';
+            }
+        } else {
+            $path = rtrim($path, '\\');
+        }
+    } else {
+        // Unix/Linux
+        $path = str_replace('\\', '/', $path);
+        $path = rtrim($path, '/');
+        if (empty($path)) {
+            $path = '/';
+        }
+    }
+    return $path;
+}
+
+/**
+ * Улучшенное получение реального пути с поддержкой всех дисков
+ */
+private function getRealPathImproved($path) {
+    // Для Windows проверяем доступность диска перед realpath
+    if (DIRECTORY_SEPARATOR === '\\') {
+        if (preg_match('/^[A-Za-z]:\\\\/', $path)) {
+            $drive = substr($path, 0, 3); // C:\
+            if (!$this->isDriveAccessible($drive)) {
+                return false;
+            }
+        }
+    }
+    
+    $realPath = realpath($path);
+    
+    if ($realPath === false) {
+        if (is_dir($path)) {
+            $realPath = $path;
+        } else {
+            return false;
+        }
+    }
+    
+    return $realPath;
+}
+
+/**
+ * Проверяет доступность диска в Windows
+ */
+private function isDriveAccessible($drivePath) {
+    if (DIRECTORY_SEPARATOR !== '\\') {
+        return true; // Для Unix/Linux всегда возвращаем true
+    }
+    
+    // Проверяем существование диска
+    if (!is_dir($drivePath)) {
+        return false;
+    }
+    
+    // Проверяем доступность для чтения
+    if (!is_readable($drivePath)) {
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Улучшенное сканирование директории с обработкой кодировок
+ */
+private function scanDirectoryImproved($directory) {
+    $items = @scandir($directory);
+    if ($items === false) {
+        return false;
+    }
+
+    // Для Windows конвертируем имена файлов в UTF-8
+    if (DIRECTORY_SEPARATOR === '\\') {
+        $converted_items = array();
+        foreach ($items as $item) {
+            $converted_items[] = $this->convertFromSystemEncoding($item);
+        }
+        return $converted_items;
+    }
+
+    return $items;
+}
+
+/**
+ * Улучшенное получение родительской директории
+ */
+private function getParentDirectoryImproved($path) {
+    $parentDir = dirname($path);
+    
+    // Для Windows проверяем, не является ли это корнем диска
+    if (DIRECTORY_SEPARATOR === '\\') {
+        if (preg_match('/^[A-Za-z]:\\\\?$/', $path)) {
+            return $path; // Уже корень диска
+        }
+        if (preg_match('/^[A-Za-z]:\\\\?$/', $parentDir)) {
+            $parentDir = rtrim($parentDir, '\\') . '\\'; // Добавляем слэш к корню диска
+        }
+    } elseif (DIRECTORY_SEPARATOR === '/' && $path === '/') {
+        return '/'; // Корень Unix/Linux
+    }
+    
+    return $parentDir;
+}
+
+/**
+ * Конвертирует строку в кодировку файловой системы
+ */
+private function convertToSystemEncoding($string) {
+    if (DIRECTORY_SEPARATOR === '\\') {
+        // Windows использует CP1251 для кириллицы в файловой системе
+        if (function_exists('iconv')) {
+            return iconv('UTF-8', 'CP1251//IGNORE', $string);
+        } elseif (function_exists('mb_convert_encoding')) {
+            return mb_convert_encoding($string, 'CP1251', 'UTF-8');
+        }
+    }
+    // Unix/Linux обычно использует UTF-8
+    return $string;
+}
+
+/**
+ * Конвертирует строку из кодировки файловой системы в UTF-8
+ */
+private function convertFromSystemEncoding($string) {
+    if (DIRECTORY_SEPARATOR === '\\') {
+        // Windows использует CP1251 для кириллицы в файловой системе
+        if (!mb_check_encoding($string, 'UTF-8')) {
+            if (function_exists('iconv')) {
+                return iconv('CP1251', 'UTF-8//IGNORE', $string);
+            } elseif (function_exists('mb_convert_encoding')) {
+                return mb_convert_encoding($string, 'UTF-8', 'CP1251');
+            }
+        }
+    }
+    return $string;
+}
+
+public function action_browse_folders() {
+    $this->auto_render = false;
+    $this->response->headers('Content-Type', 'application/json; charset=utf-8');
+    
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    
+    try {
+        if ($this->request->method() !== Request::POST) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        
+        $path = $this->request->post('path');
+        $showDrives = $this->request->post('show_drives');
+        
+        // Если запрашиваем список дисков
+        if ($showDrives === 'true') {
+            $drives = $this->getDrivesList();
+            $this->response->body(json_encode(array(
+                'status' => 'success',
+                'folders' => $drives,
+                'current_path' => 'Диски',
+                'is_drives_list' => true
+            ), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        
+        if (empty($path)) {
+            $path = dirname($_SERVER['SCRIPT_FILENAME']);
+        }
+        
+        error_log("Обработка пути: " . $path);
+        
+        // Нормализация пути с улучшенной обработкой дисков
+        $normalizedPath = $this->normalizePathImproved($path);
+        
+        error_log("Нормализованный путь: " . $normalizedPath);
+        
+        // Получаем реальный путь с улучшенной обработкой
+        $realPath = $this->getRealPathImproved($normalizedPath);
+        
+        if ($realPath === false) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Путь не найден: ' . $path), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        
+        error_log("Реальный путь: " . $realPath);
+        
+        // Проверяем, что путь не содержит опасных последовательностей
+        if (strpos($path, '..') !== false && preg_match('/\.\.[\\/\\\\]/', $path)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимые символы в пути'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        
+        // Проверяем существование папки
+        if (!is_dir($realPath)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка не найдена: ' . $realPath), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        
+        $folders = array();
+        $items = array();
+        
+        // Проверяем доступность для чтения
+        if (is_readable($realPath)) {
+            $items = $this->scanDirectoryImproved($realPath);
+            if ($items === false) {
+                error_log("Ошибка scandir для пути: " . $realPath);
+                $items = array();
+            }
+        } else {
+            error_log("Папка недоступна для чтения: " . $realPath);
+        }
+        
+        // Добавляем кнопку перехода к дискам (только для Windows)
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $folders[] = array(
+                'name' => 'Диски',
+                'path' => 'drives',
+                'type' => 'drives'
+            );
+        }
+        
+        // Добавляем возможность перехода в родительскую папку
+        $parentDir = $this->getParentDirectoryImproved($realPath);
+        if ($parentDir !== $realPath) {
+            $folders[] = array(
+                'name' => '..',
+                'path' => $parentDir,
+                'type' => 'parent'
+            );
+        }
+        
+        foreach ($items as $item) {
+            if ($item !== '.' && $item !== '..') {
+                $itemFullPath = $realPath . DIRECTORY_SEPARATOR . $item;
+                if (@is_dir($itemFullPath)) {
+                    $folders[] = array(
+                        'name' => $item,
+                        'path' => $itemFullPath,
+                        'type' => 'folder'
+                    );
+                }
+            }
+        }
+        
+        // Сортируем папки
+        usort($folders, function($a, $b) {
+            if ($a['type'] === 'drives') return -1;
+            if ($b['type'] === 'drives') return 1;
+            if ($a['type'] === 'parent') return -1;
+            if ($b['type'] === 'parent') return 1;
+            return strcasecmp($a['name'], $b['name']);
+        });
+        
+        error_log("Обработано папок: " . count($folders));
+        
+        $response = array(
+            'status' => 'success',
+            'folders' => $folders,
+            'current_path' => $realPath
+        );
+        
+        $jsonResponse = json_encode($response, JSON_UNESCAPED_UNICODE);
+        if ($jsonResponse === false) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Ошибка кодирования JSON: ' . json_last_error_msg()), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        
+        $this->response->body($jsonResponse);
+        
+    } catch (Exception $e) {
+        error_log("Исключение в browse_folders: " . $e->getMessage());
+        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Внутренняя ошибка: ' . $e->getMessage()), JSON_UNESCAPED_UNICODE));
+    }
+}
+
+// Исправленная функция getDrivesList
+private function getDrivesList() {
+    $drives = array();
+    
+    if (DIRECTORY_SEPARATOR === '\\') {
+        // Windows - получаем список дисков с улучшенной проверкой
+        for ($drive = 'A'; $drive <= 'Z'; $drive++) {
+            $drivePath = $drive . ':\\';
+            // Используем более надежную проверку доступности диска
+            if ($this->isDriveAccessible($drivePath)) {
+                $driveInfo = $this->getDriveInfo($drivePath);
+                $drives[] = array(
+                    'name' => $drive . ': ' . $driveInfo,
+                    'path' => $drivePath,
+                    'type' => 'drive'
+                );
+            }
+        }
+    } else {
+        // Linux/Unix - показываем основные точки монтирования
+        $mountPoints = array(
+            '/' => 'Корневая папка',
+            '/home' => 'Домашние папки',
+            '/var' => 'Системные файлы',
+            '/usr' => 'Программы',
+            '/opt' => 'Дополнительные программы',
+            '/media' => 'Съемные носители',
+            '/mnt' => 'Точки монтирования'
+        );
+        
+        foreach ($mountPoints as $path => $description) {
+            if (is_dir($path) && is_readable($path)) {
+                $drives[] = array(
+                    'name' => $description . ' (' . $path . ')',
+                    'path' => $path,
+                    'type' => 'drive'
+                );
+            }
+        }
+    }
+    
+    return $drives;
+}
+
+// Исправленная функция getDriveInfo
+private function getDriveInfo($drivePath) {
+    $info = '';
+    if (function_exists('disk_total_space') && function_exists('disk_free_space')) {
+        $total = @disk_total_space($drivePath);
+        $free = @disk_free_space($drivePath);
+        
+        if ($total !== false && $free !== false) {
+            $totalGB = round($total / (1024 * 1024 * 1024), 1);
+            $freeGB = round($free / (1024 * 1024 * 1024), 1);
+            $info = "({$freeGB} ГБ свободно из {$totalGB} ГБ)";
+        }
+    }
+    
+    // Получаем метку диска для Windows с улучшенной обработкой
+    if (DIRECTORY_SEPARATOR === '\\' && function_exists('exec')) {
+        $output = array();
+        $drive = substr($drivePath, 0, 2);
+        @exec("vol {$drive} 2>nul", $output);
+        if (!empty($output[0]) && strpos($output[0], 'has no label') === false) {
+            $parts = explode(' is ', $output[0]);
+            if (count($parts) > 1) {
+                $label = trim($parts[1]);
+                $label = $this->convertFromSystemEncoding($label);
+                $info = $label . ' ' . $info;
+            }
+        }
+    }
+    
+    return $info;
+}
+
+   public function action_save_settings() {
     if ($this->request->method() === HTTP_Request::POST) {
         $upload_dir = trim($this->request->post('upload_dir'));
         $consent_text = trim($this->request->post('consent_text'));
@@ -1742,317 +2114,294 @@ private function saveSettings($settings) {
     return file_put_contents($settings_file, $content) !== false;
 }
 
-public function action_browse_folders() {
-    $this->auto_render = false;
-    $this->response->headers('Content-Type', 'application/json');
+    public function action_create_folder() {
+        $this->auto_render = false;
+        $this->response->headers('Content-Type', 'application/json; charset=utf-8');
 
-    if ($this->request->method() !== Request::POST) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса')));
-        return;
-    }
-
-    $path = $this->request->post('path');
-    if (empty($path)) {
-        $path = dirname($_SERVER['SCRIPT_FILENAME']);
-    }
-
-    // Защита от выхода за пределы сервера
-    $realPath = realpath($path);
-    $serverRoot = realpath($_SERVER['DOCUMENT_ROOT']);
-    
-    if ($realPath === false || strpos($realPath, $serverRoot) !== 0) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недоступный путь')));
-        return;
-    }
-
-    if (!is_dir($realPath) || !is_readable($realPath)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка недоступна для чтения')));
-        return;
-    }
-
-    $folders = array();
-    $items = scandir($realPath);
-    
-    if ($items !== false) {
-        foreach ($items as $item) {
-            if ($item !== '.' && $item !== '..' && is_dir($realPath . DIRECTORY_SEPARATOR . $item)) {
-                $folders[] = $item;
-            }
-        }
-        sort($folders);
-    }
-
-    $this->response->body(json_encode(array(
-        'status' => 'success', 
-        'folders' => $folders,
-        'current_path' => $realPath
-    )));
-}
-
-public function action_create_folder() {
-    $this->auto_render = false;
-    $this->response->headers('Content-Type', 'application/json');
-
-    if ($this->request->method() !== Request::POST) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса')));
-        return;
-    }
-
-    $parentPath = $this->request->post('parent_path');
-    $folderName = $this->request->post('folder_name');
-
-    if (empty($parentPath) || empty($folderName)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Не указан путь или имя папки')));
-        return;
-    }
-
-    // Защита от выхода за пределы сервера
-    $realParentPath = realpath($parentPath);
-    $serverRoot = realpath($_SERVER['DOCUMENT_ROOT']);
-    
-    if ($realParentPath === false || strpos($realParentPath, $serverRoot) !== 0) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недоступный родительский путь')));
-        return;
-    }
-
-    // Очистка имени папки от опасных символов
-    $folderName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $folderName);
-    
-    if (empty($folderName)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимое имя папки')));
-        return;
-    }
-
-    $newFolderPath = $realParentPath . DIRECTORY_SEPARATOR . $folderName;
-
-    if (file_exists($newFolderPath)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка уже существует')));
-        return;
-    }
-
-    if (mkdir($newFolderPath, 0777)) {
-        $this->response->body(json_encode(array('status' => 'success', 'message' => 'Папка создана', 'path' => $newFolderPath)));
-    } else {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Ошибка создания папки')));
-    }
-}
-
-public function action_PersonalData() {
-    $id_pep = $this->request->param('id');
-    
-    $guest = new Guest2();
-    
-    $person = $guest->getPersonDetails($id_pep);
-    
-    if (empty($person)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Пользователь не найден')));
-        return;
-    }
-
-    $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
-    $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
-    $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
-
-    // Проверяем кодировку и конвертируем если нужно
-    if (!mb_check_encoding($surname, 'UTF-8')) {
-        $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
-    }
-    if (!mb_check_encoding($name, 'UTF-8')) {
-        $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
-    }
-    if (!mb_check_encoding($patronymic, 'UTF-8')) {
-        $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
-    }
-
-    $full_name = trim("$surname $name $patronymic");
-    $full_name = preg_replace('/\s+/', ' ', $full_name);
-
-    // Логируем для отладки
-    Kohana::$log->add(Log::DEBUG, 'PersonalData: Full name (UTF-8): ' . $full_name);
-    Kohana::$log->add(Log::DEBUG, 'PersonalData: Full name encoding valid: ' . (mb_check_encoding($full_name, 'UTF-8') ? 'YES' : 'NO'));
-
-    // Загрузка настроек для текста согласия
-    $settings = $this->getSettings();
-
-    $view = View::factory('order/PersonalData')
-        ->set('id_pep', $id_pep)
-        ->set('surname', $surname)
-        ->set('name', $name)
-        ->set('patronymic', $patronymic)
-        ->set('full_name', $full_name)
-        ->set('consent_text', $settings['consent_text']);
-
-    $this->template->content = $view;
-}
-
-public function action_save_signature() {
-    $this->auto_render = false;
-    $this->response->headers('Content-Type', 'application/json');
-    $id_pep = $this->request->param('id');
-    if ($this->request->method() !== Request::POST) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса')));
-        return;
-    }
-    $signature_data = $this->request->post('signature_data');
-    if (empty($signature_data)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Подпись не предоставлена')));
-        return;
-    }
-    $signature_data = str_replace('data:image/jpeg;base64,', '', $signature_data);
-    $signature_data = str_replace(' ', '+', $signature_data);
-    $image = base64_decode($signature_data);
-    $settings = $this->getSettings();
-    $upload_dir = $settings['upload_dir'];
-    if (!is_dir($upload_dir)) {
-        if (!mkdir($upload_dir, 0777, true)) {
-            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Не удалось создать папку для сохранения')));
+        if ($this->request->method() !== Request::POST) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса'), JSON_UNESCAPED_UNICODE));
             return;
         }
+
+        $parentPath = $this->request->post('parent_path');
+        $folderName = $this->request->post('folder_name');
+
+        if (empty($parentPath) || empty($folderName)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Не указан путь или имя папки'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        // Нормализация пути
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $parentPath = str_replace('/', '\\', $parentPath);
+        } else {
+            $parentPath = str_replace('\\', '/', $parentPath);
+        }
+
+        $realParentPath = realpath($parentPath);
+        $serverRoot = realpath($_SERVER['DOCUMENT_ROOT']);
+        
+        // Проверяем, что путь существует
+        if ($realParentPath === false || !is_dir($realParentPath)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Родительский путь не существует: ' . $parentPath), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        // Проверка безопасности: разрешаем только в пределах DOCUMENT_ROOT или определённых дисков
+        $allowedDrives = array('C:', 'D:'); // Настройте список допустимых дисков
+        $isAllowedDrive = false;
+        foreach ($allowedDrives as $drive) {
+            if (stripos($realParentPath, $drive) === 0) {
+                $isAllowedDrive = true;
+                break;
+            }
+        }
+
+        if (strpos($realParentPath, $serverRoot) !== 0 && !$isAllowedDrive) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Создание папки разрешено только в пределах корня сайта или на разрешённых дисках'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        // Запрещаем создание папки в корне диска
+        if (preg_match('/^[A-Za-z]:\\\\?$/', $realParentPath)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Создание папки в корне диска запрещено'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        // Очистка имени папки от опасных символов
+        $folderName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $folderName);
+        
+        if (empty($folderName)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимое имя папки'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        $newFolderPath = $realParentPath . DIRECTORY_SEPARATOR . $folderName;
+
+        if (file_exists($newFolderPath)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка уже существует'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        if (mkdir($newFolderPath, 0777)) {
+            error_log("Папка создана: " . $newFolderPath);
+            $this->response->body(json_encode(array('status' => 'success', 'message' => 'Папка создана', 'path' => $newFolderPath), JSON_UNESCAPED_UNICODE));
+        } else {
+            error_log("Ошибка создания папки: " . $newFolderPath);
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Ошибка создания папки: ' . error_get_last()['message']), JSON_UNESCAPED_UNICODE));
+        }
     }
-    if (!is_writable($upload_dir)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка недоступна для записи')));
-        return;
+
+    public function action_PersonalData() {
+        $id_pep = $this->request->param('id');
+        
+        $guest = new Guest2();
+        
+        $person = $guest->getPersonDetails($id_pep);
+        
+        if (empty($person)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Пользователь не найден'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+        $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+        $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+
+        if (!mb_check_encoding($surname, 'UTF-8')) {
+            $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+        }
+        if (!mb_check_encoding($name, 'UTF-8')) {
+            $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+        }
+        if (!mb_check_encoding($patronymic, 'UTF-8')) {
+            $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+        }
+
+        $full_name = trim("$surname $name $patronymic");
+        $full_name = preg_replace('/\s+/', ' ', $full_name);
+
+        Kohana::$log->add(Log::DEBUG, 'PersonalData: Full name (UTF-8): ' . $full_name);
+        Kohana::$log->add(Log::DEBUG, 'PersonalData: Full name encoding valid: ' . (mb_check_encoding($full_name, 'UTF-8') ? 'YES' : 'NO'));
+
+        $settings = $this->getSettings();
+
+        $view = View::factory('order/PersonalData')
+            ->set('id_pep', $id_pep)
+            ->set('surname', $surname)
+            ->set('name', $name)
+            ->set('patronymic', $patronymic)
+            ->set('full_name', $full_name)
+            ->set('consent_text', $settings['consent_text']);
+
+        $this->template->content = $view;
     }
-    $guest = new Guest2();
-    $person = $guest->getPersonDetails($id_pep);
-    if (empty($person)) {
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Пользователь не найден')));
-        return;
-    }
-    $pd = new PD($id_pep);
-    $filename_utf8 = $pd->generateFileName($id_pep, $person);
-    $filename_cp1251 = iconv('UTF-8', 'CP1251//IGNORE', $filename_utf8);
-    $filepath_cp1251 = $upload_dir . DIRECTORY_SEPARATOR . $filename_cp1251;
-    $counter = 1;
-    $base_filename_utf8 = pathinfo($filename_utf8, PATHINFO_FILENAME);
-    $extension = pathinfo($filename_utf8, PATHINFO_EXTENSION);
-    while (file_exists($filepath_cp1251)) {
-        $filename_utf8 = $base_filename_utf8 . '_' . $counter . '.' . $extension;
+
+    public function action_save_signature() {
+        $this->auto_render = false;
+        $this->response->headers('Content-Type', 'application/json; charset=utf-8');
+        $id_pep = $this->request->param('id');
+        if ($this->request->method() !== Request::POST) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Недопустимый метод запроса'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        $signature_data = $this->request->post('signature_data');
+        if (empty($signature_data)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Подпись не предоставлена'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        $signature_data = str_replace('data:image/jpeg;base64,', '', $signature_data);
+        $signature_data = str_replace(' ', '+', $signature_data);
+        $image = base64_decode($signature_data);
+        $settings = $this->getSettings();
+        $upload_dir = $settings['upload_dir'];
+        if (!is_dir($upload_dir)) {
+            if (!mkdir($upload_dir, 0777, true)) {
+                $this->response->body(json_encode(array('status' => 'error', 'message' => 'Не удалось создать папку для сохранения'), JSON_UNESCAPED_UNICODE));
+                return;
+            }
+        }
+        if (!is_writable($upload_dir)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Папка недоступна для записи'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        $guest = new Guest2();
+        $person = $guest->getPersonDetails($id_pep);
+        if (empty($person)) {
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Пользователь не найден'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        $pd = new PD($id_pep);
+        $filename_utf8 = $pd->generateFileName($id_pep, $person);
         $filename_cp1251 = iconv('UTF-8', 'CP1251//IGNORE', $filename_utf8);
         $filepath_cp1251 = $upload_dir . DIRECTORY_SEPARATOR . $filename_cp1251;
-        $counter++;
-    }
-    Kohana::$log->add(Log::DEBUG, 'save_signature: Attempting to save signature to ' . $filepath_cp1251);
-    Kohana::$log->add(Log::DEBUG, 'save_signature: File name (UTF-8): ' . $filename_utf8);
-    Kohana::$log->add(Log::DEBUG, 'save_signature: File name (CP1251): ' . $filename_cp1251);
-    if (!is_writable($upload_dir)) {
-        Kohana::$log->add(Log::ERROR, 'save_signature: Directory not writable: ' . $upload_dir);
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Директория недоступна для записи')));
-        return;
-    }
-    $bytes_written = file_put_contents($filepath_cp1251, $image);
-    if ($bytes_written !== false && $bytes_written > 0) {
-        if (file_exists($filepath_cp1251) && filesize($filepath_cp1251) > 0) {
-            Kohana::$log->add(Log::INFO, 'save_signature: Signature saved successfully to ' . $filepath_cp1251 . ' (' . $bytes_written . ' bytes)');
-            $filepath_utf8 = iconv('CP1251', 'UTF-8//IGNORE', $filepath_cp1251);
-            $filename_utf8 = iconv('CP1251', 'UTF-8//IGNORE', $filename_cp1251);
-            $this->response->body(json_encode(array(
-                'status' => 'success',
-                'message' => 'Подпись сохранена',
-                'file' => $filename_utf8,
-                'path' => $filepath_utf8,
-                'size' => filesize($filepath_cp1251)
-            ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        } else {
-            Kohana::$log->add(Log::ERROR, 'save_signature: File was written but not found: ' . $filepath_cp1251);
-            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Файл был записан, но не найден')));
+        $counter = 1;
+        $base_filename_utf8 = pathinfo($filename_utf8, PATHINFO_FILENAME);
+        $extension = pathinfo($filename_utf8, PATHINFO_EXTENSION);
+        while (file_exists($filepath_cp1251)) {
+            $filename_utf8 = $base_filename_utf8 . '_' . $counter . '.' . $extension;
+            $filename_cp1251 = iconv('UTF-8', 'CP1251//IGNORE', $filename_utf8);
+            $filepath_cp1251 = $upload_dir . DIRECTORY_SEPARATOR . $filename_cp1251;
+            $counter++;
         }
-    } else {
-        $last_error = error_get_last();
-        $error_message = $last_error ? $last_error['message'] : 'Неизвестная ошибка';
-        Kohana::$log->add(Log::ERROR, 'save_signature: Failed to save signature to ' . $filepath_cp1251 . '. Error: ' . $error_message);
-        $this->response->body(json_encode(array('status' => 'error', 'message' => 'Ошибка записи файла: ' . $error_message)));
+        Kohana::$log->add(Log::DEBUG, 'save_signature: Attempting to save signature to ' . $filepath_cp1251);
+        Kohana::$log->add(Log::DEBUG, 'save_signature: File name (UTF-8): ' . $filename_utf8);
+        Kohana::$log->add(Log::DEBUG, 'save_signature: File name (CP1251): ' . $filename_cp1251);
+        if (!is_writable($upload_dir)) {
+            Kohana::$log->add(Log::ERROR, 'save_signature: Directory not writable: ' . $upload_dir);
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Директория недоступна для записи'), JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        $bytes_written = file_put_contents($filepath_cp1251, $image);
+        if ($bytes_written !== false && $bytes_written > 0) {
+            if (file_exists($filepath_cp1251) && filesize($filepath_cp1251) > 0) {
+                Kohana::$log->add(Log::INFO, 'save_signature: Signature saved successfully to ' . $filepath_cp1251 . ' (' . $bytes_written . ' bytes)');
+                $filepath_utf8 = iconv('CP1251', 'UTF-8//IGNORE', $filepath_cp1251);
+                $filename_utf8 = iconv('CP1251', 'UTF-8//IGNORE', $filename_cp1251);
+                $this->response->body(json_encode(array(
+                    'status' => 'success',
+                    'message' => 'Подпись сохранена',
+                    'file' => $filename_utf8,
+                    'path' => $filepath_utf8,
+                    'size' => filesize($filepath_cp1251)
+                ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            } else {
+                Kohana::$log->add(Log::ERROR, 'save_signature: File was written but not found: ' . $filepath_cp1251);
+                $this->response->body(json_encode(array('status' => 'error', 'message' => 'Файл был записан, но не найден'), JSON_UNESCAPED_UNICODE));
+            }
+        } else {
+            $last_error = error_get_last();
+            $error_message = $last_error ? $last_error['message'] : 'Неизвестная ошибка';
+            Kohana::$log->add(Log::ERROR, 'save_signature: Failed to save signature to ' . $filepath_cp1251 . '. Error: ' . $error_message);
+            $this->response->body(json_encode(array('status' => 'error', 'message' => 'Ошибка записи файла: ' . $error_message), JSON_UNESCAPED_UNICODE));
+        }
     }
-}
 
+    public function action_view_signature() {
+        $id_pep = $this->request->param('id');
+        
+        if (empty($id_pep)) {
+            $this->response->body('ID пользователя не указан');
+            return;
+        }
+        
+        $pd = new PD($id_pep);
+        $signature_path = $pd->checkSignature($id_pep);
+        
+        if ($signature_path === false || !file_exists($signature_path)) {
+            $this->response->body('Подпись не найдена');
+            return;
+        }
+        
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $signature_path);
+        finfo_close($finfo);
+        
+        if ($mime_type === false) {
+            $mime_type = 'image/jpeg';
+        }
+        
+        $this->auto_render = false;
+        
+        $this->response->headers('Content-Type', $mime_type);
+        $this->response->headers('Content-Length', filesize($signature_path));
+        $this->response->headers('Cache-Control', 'no-cache, must-revalidate');
+        
+        $this->response->body(file_get_contents($signature_path));
+    }
 
-public function action_view_signature() {
-    $id_pep = $this->request->param('id');
-    
-    if (empty($id_pep)) {
-        $this->response->body('ID пользователя не указан');
-        return;
+    public function action_view_signature_page() {
+        $id_pep = $this->request->param('id');
+        
+        if (empty($id_pep)) {
+            Session::instance()->set('flash_error', 'ID пользователя не указан');
+            $this->redirect('dashboard');
+            return;
+        }
+        
+        $pd = new PD($id_pep);
+        $signature_path = $pd->checkSignature($id_pep);
+        
+        if ($signature_path === false || !file_exists($signature_path)) {
+            Session::instance()->set('flash_error', 'Подпись не найдена');
+            $this->redirect('dashboard');
+            return;
+        }
+        
+        $signature_url = $pd->getSignatureUrl($id_pep);
+        
+        $guest = new Guest2();
+        $person = $guest->getPersonDetails($id_pep);
+        
+        if (empty($person)) {
+            Session::instance()->set('flash_error', 'Данные пользователя не найдены');
+            $this->redirect('dashboard');
+            return;
+        }
+        
+        $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
+        $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
+        $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
+        
+        if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
+            $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
+            $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
+            $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
+        }
+        
+        $full_name = trim("$surname $name $patronymic");
+        $full_name = preg_replace('/\s+/', ' ', $full_name);
+        
+        $view = View::factory('order/view_signature')
+            ->set('id_pep', $id_pep)
+            ->set('full_name', $full_name)
+            ->set('signature_url', $signature_url)
+            ->set('signature_path', $signature_path);
+        
+        $this->template->content = $view;
     }
-    
-    $pd = new PD($id_pep);
-    $signature_path = $pd->checkSignature($id_pep);
-    //echo Debug::vars('1837', $signature_path);exit;
-    
-    if ($signature_path === false || !file_exists($signature_path)) {
-        $this->response->body('Подпись не найдена');
-        return;
-    }
-    
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime_type = finfo_file($finfo, $signature_path);
-    finfo_close($finfo);
-    
-    if ($mime_type === false) {
-        $mime_type = 'image/jpeg';
-    }
-    
-    $this->auto_render = false;
-    
-    $this->response->headers('Content-Type', $mime_type);
-    $this->response->headers('Content-Length', filesize($signature_path));
-    $this->response->headers('Cache-Control', 'no-cache, must-revalidate');
-    
-    $this->response->body(file_get_contents($signature_path));
-}
 
-public function action_view_signature_page() {
-    $id_pep = $this->request->param('id');
-    
-    if (empty($id_pep)) {
-        Session::instance()->set('flash_error', 'ID пользователя не указан');
-        $this->redirect('dashboard');
-        return;
-    }
-    
-    $pd = new PD($id_pep);
-    $signature_path = $pd->checkSignature($id_pep);
-    
-    if ($signature_path === false || !file_exists($signature_path)) {
-        Session::instance()->set('flash_error', 'Подпись не найдена');
-        $this->redirect('dashboard');
-        return;
-    }
-    
-    $signature_url = $pd->getSignatureUrl($id_pep);
-    
-    $guest = new Guest2();
-    $person = $guest->getPersonDetails($id_pep);
-    
-    if (empty($person)) {
-        Session::instance()->set('flash_error', 'Данные пользователя не найдены');
-        $this->redirect('dashboard');
-        return;
-    }
-    
-    $surname = !empty($person['SURNAME']) ? trim($person['SURNAME']) : 'Unknown';
-    $name = !empty($person['NAME']) ? trim($person['NAME']) : 'Unknown';
-    $patronymic = !empty($person['PATRONYMIC']) ? trim($person['PATRONYMIC']) : 'Unknown';
-    
-    if (!mb_check_encoding($surname, 'UTF-8') || !mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($patronymic, 'UTF-8')) {
-        $surname = iconv('CP1251', 'UTF-8//IGNORE', $surname);
-        $name = iconv('CP1251', 'UTF-8//IGNORE', $name);
-        $patronymic = iconv('CP1251', 'UTF-8//IGNORE', $patronymic);
-    }
-    
-    $full_name = trim("$surname $name $patronymic");
-    $full_name = preg_replace('/\s+/', ' ', $full_name);
-    
-    $view = View::factory('order/view_signature')
-        ->set('id_pep', $id_pep)
-        ->set('full_name', $full_name)
-        ->set('signature_url', $signature_url)
-        ->set('signature_path', $signature_path);
-    
-    $this->template->content = $view;
-}
-
-
-private function getSettings() {
+    private function getSettings() {
     $settings_file = APPPATH . 'config' . DIRECTORY_SEPARATOR . 'app_settings.php';
     $default_settings = array(
         'upload_dir' => dirname($_SERVER['SCRIPT_FILENAME']) . DIRECTORY_SEPARATOR . 'signatures',

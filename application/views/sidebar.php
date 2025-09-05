@@ -9,7 +9,7 @@
 		
 		//$configMenu= Kohana::$config->load('config_newcrm')->get('configLeftMenu');// получаю массив меню из указанного в конфигурации файла
 		$configMenu= MenuModuleUser::factory();// получаю массив меню для авторизованного пользователя.
-		
+		//echo Debug::vars('12', $configMenu); exit;
 		$fullMenu='leftside';// указание на файл с полным списком меню + указание на файл view. Файл со списком должен находится в C:\xampp\htdocs\crm2\modules\menu\config\menu\<$fullMenu>.php. 
 		//$fileView='dashboardbar';// указание на файл с полным списком меню + указание на файл view. Файл со списком должен находится в C:\xampp\htdocs\crm2\modules\menu\config\menu\<$fullMenu>.php. 
 		//$fileView='navbar';// указание на файл с полным списком меню + указание на файл view. Файл со списком должен находится в C:\xampp\htdocs\crm2\modules\menu\config\menu\<$fullMenu>.php. 

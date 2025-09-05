@@ -16,6 +16,8 @@ $guest = new Guest2($id_pep);
 $id_card = isset($cardlist[0]['ID_CARD']) ? $cardlist[0]['ID_CARD'] : null;
 $key = new Keyk($id_card);
 $mode = isset($mode) ? $mode : 'guest_mode';
+//echo Debug::vars('19', $mode);exit;
+//$mode = 'newguest';
 $user = new User();
 //echo Debug::vars('20', $user);exit;
 ?>
@@ -30,19 +32,21 @@ $user = new User();
     <div class="header">
         <span>
             <?php
+            //echo Debug::vars('35', $mode);exit;
             switch ($mode) {
-                case 'guest_mode':
-                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest_>$patronymic) : '';
-                    break;
-                case 'archive_mode':
-                    echo $id_pep ? __('guest.titleinArchive') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest->patronymic) : '';
-                    break;
                 case 'newguest':
                 case 'neworder':
                     echo '<span>' . __('guest.registration') . '</span>';
                     break;
+                case 'guest_mode':
+                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest->name) . (!empty($guest->patronymic) ? ' ' . htmlspecialchars($guest->patronymic) : '') : '';
+                    break;
+                case 'archive_mode':
+                    echo $id_pep ? __('guest.titleinArchive') . ': ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest->name) . (!empty($guest->patronymic) ? ' ' . htmlspecialchars($guest->patronymic) : '') : '';
+                    break;
+                
                 case 'buro':
-                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest->patronymic) : '';
+                    echo $id_pep ? __('guest.title') . ': ' . htmlspecialchars($guest->surname) . ' ' . htmlspecialchars($guest->name) . ' ' . htmlspecialchars($guest->patronymic) : '';
                     break;
             }
             ?>
@@ -58,6 +62,7 @@ $user = new User();
                 <tr>
                     <td>
                         <?php
+                        //echo Debug::vars('65', $mode);exit;
                         switch ($mode) {
                             case 'newguest':
                             case 'guest_mode':
@@ -71,6 +76,7 @@ $user = new User();
                     </td>
                     <td style="padding-left: 40px; vertical-align: top;">
                         <?php
+                        //echo Debug::vars('79', $mode);exit;
                         switch ($mode) {
                             case 'newguest':
                                 include Kohana::find_file('views', 'order/block/card_dates');
@@ -79,8 +85,15 @@ $user = new User();
                             case 'guest_mode':  
                                 if ($user->id_role == 1||$user->id_role == 2) {
                                     include Kohana::find_file('views', 'order/block/rfid');
-                                    echo '<br>';
-                                    include Kohana::find_file('views', 'order/block/card_dates');
+                                echo '<br>';
+                                include Kohana::find_file('views', 'order/block/card_dates');
+                                echo '<br>';
+                                include Kohana::find_file('views', 'order/block/forPD');
+                                }
+                                elseif ($user->id_role == 3){
+                                    if (!empty($cardlist[0]['ID_CARD'])) {
+                                    include Kohana::find_file('views', 'order/block/rfid');
+                                }
                                 }
                                 break;
                             case 'archive_mode':
@@ -110,26 +123,33 @@ $user = new User();
                     </td>
                     <td style="padding-left: 40px; vertical-align: top;">
                         <?php
+                        //echo Debug::vars('121', $mode);exit;
                         switch ($mode) {
+                            
                             case 'newguest':
                             case 'guest_mode':
                             case 'archive_mode':
                             case 'neworder':
                             case 'buro':
                                 include Kohana::find_file('views', 'order/block/note');
-                                if (($mode == 'buro' || $mode == 'neworder') && $user->id_role == 2 || $user->id_role == 1 ) {
+                                if (($mode == 'buro' || $mode == 'neworder' || $mode == 'guest_mode') && $user->id_role == 2 || $user->id_role == 1 ) {
                                     echo '<br>';
                                     include Kohana::find_file('views', 'order/block/access_checkboxes');
                                 }
+                                //echo Debug::vars('134', $mode);exit;
                                 break;
                         }
+                        //echo Debug::vars('136', $mode);exit;
                         ?>
                     </td>
                 </tr>
             </table>
-
+            
             <br />
             <?php
+            //$mode = 'newguest';
+            //echo Debug::vars('143', $mode);exit;
+            //echo Debug::vars('144', $_SESSION);exit;
             switch ($mode) {
                 case 'neworder':
                     if ($user->id_role == 1 || $user->id_role == 2) {
@@ -160,41 +180,63 @@ $user = new User();
                     break;
                 case 'newguest':
                     echo Form::hidden('todo', 'savenew');
-                    echo Form::submit('savenew', __('Добавить гостя214'));
+                    echo Form::submit('savenew', __('order.edit.nameAddGuestBtn'));
                     break;
                 case 'guest_mode':
                     if ($user->id_role == 1 || $user->id_role == 2) {
-                        $mode = 'buro';
                         echo Form::hidden('todo', 'reissue'); 
-                        echo Form::submit('reissue', __('Обновить233'), array(
+                        echo Form::submit('reissue', __('order.edit.nameUpdateBtn'), array(
                             'onclick' => "this.form.elements.todo.value='reissue'"
                         ));
-                        
-                        $pd = new PD($id_pep);
-                        $signature_file = $pd->checkSignature($id_pep);
-                        if ($signature_file === false || !file_exists($signature_file)) {
-                            echo Form::submit('consent', __('order.edit.nameConsentBtn'), array(
-                                'onclick' => "this.form.elements.todo.value='consent'"
-                            ));
-                        } else {
-                            echo '<a href="' . URL::site('order/view_signature_page/' . $id_pep) . '" class="btn">' . __('order.edit.nameViewSignature') . '</a>';
-                        }
-                        
                         if (!empty($cardlist[0]['ID_CARD'])) {
+                            echo Form::open();
+                            echo Form::hidden('todo', 'forceexit');
                             echo Form::submit('forceexit', __('order.edit.nameForceexitBtn'), array(
                                 'onclick' => "this.form.elements.todo.value='forceexit'"
                             ));
                         }
+                        echo Form::close();
+                        
+                        $pd = new PD($id_pep);
+                        $signature_file = $pd->checkSignature($id_pep);
+                        if ($signature_file === false || !file_exists($signature_file)) {
+                            echo Form::open('order/PersonalData/' . $id_pep, array('class'=>'consent'));
+                            echo Form::hidden('todo', 'consent');
+                            echo Form::submit('consent', __('order.edit.nameConsentBtn'), array(
+                                'onclick' => "this.form.elements.todo.value='consent'"
+                            ));
+                            echo Form::close();
+                        } else {
+                            echo Form::open('order/view_signature_page/'. $id_pep, array('class'=>'signature'));
+                            echo Form::hidden('todo', 'signature');
+                            echo Form::submit('signature', __('order.edit.nameViewSignature'), array(
+                                'onclick'=> "this.form.elements.todo.value='signature'"
+                            ));
+                           //echo '<a href="' . URL::site('order/view_signature_page/' . $id_pep) . '" class="btn">' . __('Посмотреть согласие') . '</a>';
+                            echo Form::close();
+                        }
+                        
+                    } else {
+                        echo Form::hidden('todo', 'update');
+                        echo Form::submit('update', __('Обновить гостя'));
                     }
                     echo Form::close();
+                    echo Form::open('order/historyGuest/' . $id_pep, array('class' => 'history-form'));
+                    echo Form::hidden('todo', 'viewhistory');
+                    echo Form::submit('viewhistory', __('order.edit.nameHistoryBtn'), array(
+                        'class' => 'btn',
+                        'onclick' => "this.form.elements.todo.value='viewhistory';"
+                    ));
+                    echo Form::close();
+                    
                     if ($user->id_role === 3){
-                        echo Form::open('order/historyGuest/' . $id_pep, array('class' => 'history-form'));
-                        echo Form::hidden('todo', 'viewhistory');
-                        echo Form::submit('viewhistory', __('order.edit.nameHistoryBtn'), array(
-                            'class' => 'btn',
-                            'onclick' => "this.form.elements.todo.value='viewhistory';"
-                        ));
-                        echo Form::close();
+                        // echo Form::open('order/historyGuest/' . $id_pep, array('class' => 'history-form'));
+                        // echo Form::hidden('todo', 'viewhistory');
+                        // echo Form::submit('viewhistory', __('order.edit.nameHistoryBtn'), array(
+                        //     'class' => 'btn',
+                        //     'onclick' => "this.form.elements.todo.value='viewhistory';"
+                        // ));
+                        // echo Form::close();
                     }
                     break;
                 case 'archive_mode':
@@ -204,7 +246,7 @@ $user = new User();
                             echo Form::submit('forceexit', __('Зorder.edit.nameForceexitBtn'));
                         }
                         echo Form::hidden('todo', 'newguestorder');
-                        echo Form::submit('newguestorder', __('Повторить заявку222'), array(
+                        echo Form::submit('newguestorder', __('order.edit.nameRepeatOrderBtn'), array(
                             'onclick' => "this.form.elements.todo.value='newguestorder'; return confirm('Вы уверены, что хотите повторить заявку?');"
                         ));
                     } elseif ($user->id_role == 2 || $user->id_role == 3) {
@@ -226,7 +268,7 @@ $user = new User();
                 case 'buro':
                     if ($user->id_role == 1 || $user->id_role == 2) {
                         echo Form::hidden('todo', 'reissue'); 
-                        echo Form::submit('reissue', __('Обновить233'), array(
+                        echo Form::submit('reissue', __('order.edit.nameUpdateBtn'), array(
                             'onclick' => "this.form.elements.todo.value='reissue'"
                         ));
                         if (!empty($cardlist[0]['ID_CARD'])) {

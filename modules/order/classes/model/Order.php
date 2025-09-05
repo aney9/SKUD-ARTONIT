@@ -71,6 +71,7 @@ public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_
         o."NAME" AS org_name, 
         p."SURNAME" AS p_surname,
         g."NUMDOC" as numdoc, 
+		 g.time_stamp,
         gu.timeplan,
         gu.timeorder,
         gu.is_active,
@@ -111,7 +112,7 @@ public function getListNowOrder($id_pep, $mode = null, $user_role = null, $buro_
     }
 
     Log::instance()->add(Log::DEBUG, 'Final SQL query: ' . $sql);
-
+//echo Debug::vars('114', $sql); exit;
     $query = DB::query(Database::SELECT, $sql);
     if ($user_role == 3) {
         $user = new User();

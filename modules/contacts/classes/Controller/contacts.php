@@ -486,7 +486,7 @@ class Controller_Contacts extends Controller_Template
 		$id=$this->request->param('id');//это id_pep
 		
 		$force_org=$this->request->query('id_org');//наличие этого параметра означает, что надо выбрать именно указанную организацию для правильной работы дерева организаций.
-		
+		//echo Debug::vars('489', $this->user); exit;
 		//выбор головной организации
 		$id_orgctrl=$this->user->id_orgctrl;
 		//выбираю организацию для быстрой регистрации из параметров настройки 'system' для текущего авторизованного пипла

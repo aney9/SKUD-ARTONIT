@@ -1,4 +1,4 @@
-<fieldset>
+<fieldset style="max-width: 400px;">
     <legend><?php echo __('Персональные данные'); ?></legend>
     <div>
         <label for="surname"><?php echo __('contact.surname'); ?> <span style="color: black;">*</span></label>

@@ -111,8 +111,17 @@
             $safe_full_name = mb_check_encoding($full_name, 'UTF-8') ? $full_name : iconv('CP1251', 'UTF-8//IGNORE', $full_name);
             $safe_consent_text = mb_check_encoding($consent_text, 'UTF-8') ? $consent_text : iconv('CP1251', 'UTF-8//IGNORE', $consent_text);
             
-            $display_text = str_replace('{full_name}', htmlspecialchars($safe_full_name, ENT_QUOTES, 'UTF-8'), $safe_consent_text); 
-            echo $display_text;
+            $today = date('d.m.Y');
+            $display_text = str_replace(
+                //тут надо вводить переменные, которые будут в тексте согласия
+                ['{full_name}', '{date}'], 
+                [
+                    htmlspecialchars($safe_full_name, ENT_QUOTES, 'UTF-8'),
+                    htmlspecialchars($today, ENT_QUOTES, 'UTF-8')
+                ], 
+                $safe_consent_text
+                );
+echo $display_text;
             ?>
         </div>
         <div id="message-container"></div>

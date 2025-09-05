@@ -28,10 +28,11 @@ class Controller_Companies extends Controller_Template
 	{
 		//смотрю указание на родительскую организацию для вывода списка организаций.
 		$parent_org=$this->request->query('parent');
-		//echo Debug::vars('43', $parent_org);//exit;
+		//echo Debug::vars('43', $parent_org);exit;
 		
 		$user=new User;//информация о текущем авторизованном пользователе
 				
+		//echo Debug::vars('43', $user);exit;		
 		if(is_null($parent_org)) $parent_org=$user->id_orgctrl;// если parent_org не указан, то беру id_orgctrl подчиняемой организации
 		
 		

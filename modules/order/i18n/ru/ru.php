@@ -35,5 +35,10 @@ return array
 	'order.edit.nameAddGuestWithCardBtn'=>'Добавить гостя',
 	'order.edit.nameForceexitBtn'=>'Забрать карту',
 	'order.edit.nameViewSignature'=>'Посмотреть согласие',
-	'order.edit.nameHistoryBtn'=>'История'
+	'order.edit.nameHistoryBtn'=>'История',
+	'order.edit.nameRegistBtn'=>'Добавить гостя',
+	'order.edit.nameUpdateBtn'=>'Обновить',
+	'order.time_stamp'=>'Дата регистрации',
+	'order.edit.nameAddGuestBtn'=>'Добавить гостя',
+	'order.edit.nameRepeatOrderBtn'=>'Повторить заявку'
 );

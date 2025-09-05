@@ -34,6 +34,8 @@ echo Form::close();
 ?>
 </fieldset>
 
+
+    
     <fieldset>
         <legend><?php echo __('order.settings.nameSettingPD')?></legend>
     <?php if (isset($_GET['settings_saved']) && $_GET['settings_saved'] == '1') { ?>
@@ -47,8 +49,7 @@ echo Form::close();
     <?php } ?>
     
     <form action="<?php echo URL::site('order/save_settings'); ?>" method="post" id="settings-form">
-        
-        <div class="setting-group">
+		<div class="setting-group">
             <h4><?php echo __('order.settings.namePolicy')?></h4>
             <div class="radio-group">
                 <label>
@@ -64,7 +65,7 @@ echo Form::close();
                 </label>
             </div>
         </div>
-        
+	
         <label for="upload_dir"><?php echo __('order.settings.nameWay')?></label><br>
         <div style="display: flex; align-items: center; margin-bottom: 10px;">
             <input type="text" id="upload_dir" name="upload_dir" value="<?php echo HTML::chars($upload_dir); ?>" style="width: 70%; margin-right: 10px;" readonly>
@@ -77,6 +78,7 @@ echo Form::close();
         <input type="submit" value="<?php echo __('order.settings.nameSaveSettingsBtn')?>" class="btn-add">
     </form>
 
+    <!-- Модальное окно для выбора папки -->
     <div id="folder-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -88,6 +90,7 @@ echo Form::close();
                     Текущая папка: <span id="current-path-text"><?php echo HTML::chars(dirname($_SERVER['SCRIPT_FILENAME'])); ?></span>
                 </div>
                 <div id="folder-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                    <!-- Список папок будет загружен через AJAX -->
                 </div>
                 <div style="margin-top: 15px;">
                     <input type="text" id="new-folder-name" placeholder="Имя новой папки" style="width: 70%; margin-right: 10px;">
@@ -100,9 +103,9 @@ echo Form::close();
             </div>
         </div>
     </div>
-</fieldset>
+	</fieldset>
 
-<fieldset>
+    <fieldset>
     <legend><?php echo __('order.settings.namePeopleAndAccess')?></legend>
     <table class="data" width="100%" cellpadding="0" cellspacing="0">
         <thead>
@@ -264,25 +267,6 @@ echo Form::close();
         background-color: #f8d7da;
         color: #721c24;
         border: 1px solid #f5c6cb;
-    }
-    
-    /* Стили для новых элементов */
-    /* .setting-group {
-        margin: 20px 0;
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        background-color: #f9f9f9;
-    } */
-    
-    .radio-group label {
-        display: block;
-        margin: 8px 0;
-        font-weight: normal;
-    }
-    
-    .radio-group input[type="radio"] {
-        margin-right: 8px;
     }
     
     /* Стили для модального окна */

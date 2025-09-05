@@ -307,9 +307,7 @@ public function getIdBuroForUser($id_pep)
         
         return $result ? $result[0] : [];
     }
-
-
-public function getUserBuros($id_user)
+	public function getUserBuros($id_user)
 {
     $sql = 'SELECT id_buro FROM bu_conf WHERE id_pep = :id_user';
     $query = DB::query(Database::SELECT, $sql)
@@ -385,23 +383,16 @@ public function getUserBuros($id_user)
 }
 
     public function getAccessUserByIdPep($id_pep)
-{
-    $sql = 'SELECT id_accessname FROM ss_accessuser WHERE id_pep = :id_pep';
-    $query = DB::query(Database::SELECT, $sql)
-        ->param(':id_pep', $id_pep)
-        ->execute(Database::instance('fb'));
-    $result = $query->as_array();
-    
-    array_walk_recursive($result, function (&$value) {
-        if (is_string($value)) {
-            $value = iconv('CP1251', 'UTF-8', $value);
-        }
-    });
-    
-    // Собираем все id_accessname в массив
-    $access_ids = Arr::pluck($result, 'id_accessname');
-    return !empty($access_ids) ? $access_ids : array();
-}
+    {
+        // Получаем id_accessname из ss_accessuser для id_pep
+        $sql = 'SELECT id_accessname FROM ss_accessuser WHERE id_pep = :id_pep';
+        $query = DB::query(Database::SELECT, $sql)
+            ->param(':id_pep', $id_pep)
+            ->execute(Database::instance('fb'));
+        $result = $query->as_array();
+        
+        return !empty($result) ? $result[0]['ID_ACCESSNAME'] : '';
+    }
 
     public function addGuestToBuro($id_pep, $id_buro)
 {

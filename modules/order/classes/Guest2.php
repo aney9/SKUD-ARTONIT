@@ -873,7 +873,7 @@ public function getOrg(){
 }
 
 
-        public function getEvents($id_pep) {
+    public function getEvents($id_pep) {
         
 		$sql = 'SELECT
                 e.ID_EVENT,
@@ -896,9 +896,13 @@ public function getOrg(){
                 WHERE e.ESS1 = :id_pep
                 ORDER BY e.ID_EVENT';
 
+
+
+
+
         $query = DB::query(Database::SELECT, $sql)
             ->param(':id_pep', $id_pep);
-
+//echo Debug::vars('898',$query); exit;
         $result = $query->execute(Database::instance('fb'))
                        ->as_array();
 
@@ -945,7 +949,6 @@ public function getOrg(){
             'ORG_NAME' => !empty($row['ORG_NAME']) ? iconv('CP1251', 'UTF-8', $row['ORG_NAME']) : ''
         ];
     }
-
 	public function getAccessUser($id_pep){
     $sql = "SELECT
                 an.name
